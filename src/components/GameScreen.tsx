@@ -7,6 +7,7 @@ import React, {
   useRef,
   useState,
 } from "react";
+import { motion } from "framer-motion";
 import Button from "./Button";
 import Card from "./Card";
 import Input from "./Input";
@@ -15,6 +16,7 @@ import Background from "./Background";
 import { Queue } from "../lib/Queue";
 import { LinkedList } from "../lib/LinkedList";
 import { Stack } from "../lib/Stack";
+import "../styles/GameScreen.css";
 
 type Difficulty = "basic" | "advanced" | "expert";
 
@@ -128,6 +130,10 @@ const GameScreen: React.FC<GameScreenProps> = ({ onLogout }) => {
     []
   );
 
+  // Estructuras de datos utilizadas:
+  // - Queue: Cola para gestionar preguntas pendientes (FIFO)
+  // - Stack: Pila para historial de intentos (LIFO)
+  // - LinkedList: Lista enlazada para el leaderboard (más abajo)
   const questionQueue = useRef(new Queue<Question>());
   const startTimestampRef = useRef<number | null>(null);
   const historyStack = useRef(new Stack<HistoryEntry>());
@@ -415,7 +421,12 @@ const GameScreen: React.FC<GameScreenProps> = ({ onLogout }) => {
       
       {/* User Header */}
       {currentUser && (
-        <div className="user-header">
+        <motion.div
+          className="user-header"
+          initial={{ y: -50, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ duration: 0.5 }}
+        >
           <div className="user-info">
             <span className="user-icon">👤</span>
             <div className="user-details">
@@ -432,56 +443,88 @@ const GameScreen: React.FC<GameScreenProps> = ({ onLogout }) => {
               🚪 Salir
             </button>
           )}
-        </div>
+        </motion.div>
       )}
       
       <div className="game-container">
-        <Card className="game-panel">
-          <div className="panel-header">
-            <h1>Desafío matemático</h1>
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.1 }}
+        >
+          <Card className="game-panel game-card">
+          <motion.div
+            className="panel-header"
+            initial={{ y: -20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.2 }}
+          >
+            <h1>🎯 Desafío Matemático</h1>
             <Timer timeRemaining={timeRemaining} />
-          </div>
+          </motion.div>
 
-          <p className="player-label">
-            Jugador:
-            <Input
-              value={playerName}
-              onChange={handlePlayerNameChange}
-              placeholder="Nombre del jugador"
-              className="player-input"
-              disabled={gameActive}
-            />
-          </p>
+          <motion.div
+            initial={{ x: -20, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            transition={{ delay: 0.3 }}
+          >
+            <p className="player-label">
+              Jugador:
+              <Input
+                value={playerName}
+                onChange={handlePlayerNameChange}
+                placeholder="Nombre del jugador"
+                className="player-input"
+                disabled={gameActive}
+              />
+            </p>
+          </motion.div>
 
-          <div className="difficulty-selector">
+          <motion.div
+            className="difficulty-selector"
+            initial={{ x: -20, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            transition={{ delay: 0.4 }}
+          >
             <Button
               onClick={() => handleDifficultyChange("basic")}
               disabled={gameActive}
               className={difficulty === "basic" ? "selected" : ""}
             >
-              Básica
+              🌟 Básica
             </Button>
             <Button
               onClick={() => handleDifficultyChange("advanced")}
               disabled={gameActive}
               className={difficulty === "advanced" ? "selected" : ""}
             >
-              Avanzada
+              🔥 Avanzada
             </Button>
             <Button
               onClick={() => handleDifficultyChange("expert")}
               disabled={gameActive}
               className={difficulty === "expert" ? "selected" : ""}
             >
-              Experta
+              💎 Experta
             </Button>
-          </div>
+          </motion.div>
 
-          <div className="question-wrapper">
-            <h2>Resuelve:</h2>
-            <p className="question-display">
-              {currentQuestion ? currentQuestion.prompt : "Generando desafío..."}
-            </p>
+          <motion.div
+            className="question-wrapper"
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ delay: 0.5, type: "spring", stiffness: 100 }}
+          >
+            <h2>📝 Resuelve:</h2>
+            <motion.p
+              className="question-display"
+              key={currentQuestion?.prompt}
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ duration: 0.4 }}
+            >
+              {currentQuestion ? currentQuestion.prompt : "⏳ Generando desafío..."}
+            </motion.p>
             <Input
               value={userAnswer}
               onChange={handleAnswerChange}
@@ -496,14 +539,14 @@ const GameScreen: React.FC<GameScreenProps> = ({ onLogout }) => {
                 disabled={!gameActive || !currentQuestion || isStarting}
                 className="primary"
               >
-                Comprobar resultado
+                ✓ Comprobar resultado
               </Button>
               <Button
                 onClick={finishGame}
                 disabled={isStarting || saving}
                 className="secondary"
               >
-                Terminar partida
+                ⏹ Terminar partida
               </Button>
             </div>
             <Button
@@ -511,68 +554,115 @@ const GameScreen: React.FC<GameScreenProps> = ({ onLogout }) => {
               disabled={gameActive || isStarting}
               className="ghost"
             >
-              {isStarting ? "Preparando partida..." : "Nueva partida"}
+              {isStarting ? "⏳ Preparando partida..." : "🎮 Nueva partida"}
             </Button>
-          </div>
+          </motion.div>
 
           <div className="feedback-area">
             {feedback && (
-              <p className={`feedback feedback-${feedback}`}>
-                {feedback === "correct" ? "¡Excelente!" : "Respuesta incorrecta."}
-              </p>
+              <motion.p
+                className={`feedback feedback-${feedback}`}
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ duration: 0.3 }}
+              >
+                {feedback === "correct" ? "🎉 ¡Excelente!" : "❌ Respuesta incorrecta."}
+              </motion.p>
             )}
-            {statusMessage && <p className="status-message">{statusMessage}</p>}
-            {error && <p className="error-message">{error}</p>}
-            {saving && <p className="status-message">Sincronizando con la base de datos...</p>}
+            {statusMessage && (
+              <motion.p
+                className="status-message"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+              >
+                {statusMessage}
+              </motion.p>
+            )}
+            {error && (
+              <motion.p
+                className="error-message"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+              >
+                {error}
+              </motion.p>
+            )}
+            {saving && (
+              <motion.p
+                className="status-message"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+              >
+                💾 Sincronizando con la base de datos...
+              </motion.p>
+            )}
           </div>
         </Card>
+        </motion.div>
 
-        <Card className="stats-panel">
-          <h2>Panel de progreso</h2>
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.2 }}
+        >
+          <Card className="stats-panel game-card">
+            <h2>📊 Panel de progreso</h2>
           <div className="stats-grid">
-            <div>
-              <span>Puntaje</span>
+            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+              <span>🎯 Puntaje</span>
               <strong>{score}</strong>
-            </div>
-            <div>
-              <span>Mejor puntaje</span>
+            </motion.div>
+            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+              <span>🏆 Mejor puntaje</span>
               <strong>{bestScore}</strong>
-            </div>
-            <div>
-              <span>Dificultad</span>
+            </motion.div>
+            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+              <span>📈 Dificultad</span>
               <strong>{difficulty}</strong>
-            </div>
-            <div>
-              <span>Racha</span>
+            </motion.div>
+            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+              <span>🔥 Racha</span>
               <strong>{streak}</strong>
-            </div>
-            <div>
-              <span>Mejor racha</span>
+            </motion.div>
+            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+              <span>⚡ Mejor racha</span>
               <strong>{bestStreak}</strong>
-            </div>
-            <div>
-              <span>Operaciones en cola</span>
+            </motion.div>
+            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+              <span>📦 Cola (Queue)</span>
               <strong>{operationsInQueue}</strong>
-            </div>
-            <div>
-              <span>Resueltas</span>
+            </motion.div>
+            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+              <span>✅ Resueltas</span>
               <strong>{totalQuestions}</strong>
-            </div>
-            <div>
-              <span>Tiempo restante</span>
+            </motion.div>
+            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+              <span>⏱️ Tiempo restante</span>
               <strong>{timeRemaining}s</strong>
-            </div>
+            </motion.div>
           </div>
         </Card>
+        </motion.div>
 
-        <Card className="history-panel">
-          <h2>Intentos recientes</h2>
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.3 }}
+        >
+          <Card className="history-panel game-card">
+            <h2>📜 Intentos recientes (Stack)</h2>
           {history.length === 0 ? (
             <p>Aún no hay intentos registrados.</p>
           ) : (
             <ul className="history-list">
               {history.map((entry, index) => (
-                <li key={`${entry.timestamp}-${index}`}>
+                <motion.li
+                  key={`${entry.timestamp}-${index}`}
+                  initial={{ x: -20, opacity: 0 }}
+                  animate={{ x: 0, opacity: 1 }}
+                  transition={{ delay: index * 0.1 }}
+                  whileHover={{ scale: 1.02 }}
+                >
                   <span className={entry.isCorrect ? "correct" : "incorrect"}>
                     {entry.isCorrect ? "✔" : "✘"}
                   </span>
@@ -580,38 +670,51 @@ const GameScreen: React.FC<GameScreenProps> = ({ onLogout }) => {
                   <span className="history-answer">Tu respuesta: {entry.playerAnswer}</span>
                   <span className="history-answer">Correcta: {entry.correctAnswer}</span>
                   <span className="history-time">{entry.timestamp}</span>
-                </li>
+                </motion.li>
               ))}
             </ul>
           )}
         </Card>
+        </motion.div>
 
-        <Card className="leaderboard-panel">
-          <h2>Historial reciente</h2>
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.4 }}
+        >
+          <Card className="leaderboard-panel game-card">
+            <h2>🏅 Historial reciente (LinkedList)</h2>
           {loading ? (
-            <p>Cargando resultados...</p>
+            <p>⏳ Cargando resultados...</p>
           ) : leaderboard.length === 0 ? (
             <p>Aún no hay intentos registrados.</p>
           ) : (
             <ul className="leaderboard-list">
-              {leaderboard.map((game) => (
-                <li key={game.id}>
+              {leaderboard.map((game, index) => (
+                <motion.li
+                  key={game.id}
+                  initial={{ x: -20, opacity: 0 }}
+                  animate={{ x: 0, opacity: 1 }}
+                  transition={{ delay: index * 0.1 }}
+                  whileHover={{ scale: 1.02 }}
+                >
                   <div>
-                    <strong>{game.playerName}</strong> — {game.difficulty}
+                    <strong>👤 {game.playerName}</strong> — {game.difficulty}
                   </div>
                   <div>
-                    Puntaje: {game.score} · Aciertos: {game.correctAnswers}/{game.totalQuestions}
+                    🎯 Puntaje: {game.score} · ✅ Aciertos: {game.correctAnswers}/{game.totalQuestions}
                   </div>
                   <div>
-                    Duración: {game.durationSeconds}s — {game.createdAt
+                    ⏱️ Duración: {game.durationSeconds}s — 📅 {game.createdAt
                       ? new Date(game.createdAt).toLocaleString()
                       : "Sin fecha"}
                   </div>
-                </li>
+                </motion.li>
               ))}
             </ul>
           )}
         </Card>
+        </motion.div>
       </div>
     </div>
   );
