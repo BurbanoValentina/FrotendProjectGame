@@ -20,7 +20,7 @@ class AuthService {
   private sessionHistory: SessionQueue<string>;
   private navigationHistory: NavigationStack<string>;
   private currentUser: User | null;
-  private readonly API_URL = 'http://localhost:8080/api/auth';
+  private readonly API_URL = 'https://web-k1y5lmjwwpdm.up-de-fra1-k8s-1.apps.run-on-seenode.com/api/auth';
 
   private constructor() {
     this.userCache = new UserHashMap();
