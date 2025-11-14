@@ -171,7 +171,7 @@ const GameScreen: React.FC<GameScreenProps> = ({ onLogout }) => {
   ]));
 
   const apiUrl = useMemo(
-    () => import.meta.env.VITE_API_URL ?? "http://localhost:8080",
+    () => import.meta.env.VITE_API_URL ?? "https://web-k1y5lmjwwpdm.up-de-fra1-k8s-1.apps.run-on-seenode.com",
     []
   );
 
