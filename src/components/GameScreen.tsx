@@ -16,6 +16,8 @@ import Background from "./Background";
 import { Queue } from "../lib/Queue";
 import { LinkedList } from "../lib/LinkedList";
 import { Stack } from "../lib/Stack";
+import { PanelStateManager } from "../lib/PanelStateManager";
+import { LayoutManager, PanelConfig } from "../lib/LayoutManager";
 import "../styles/GameScreen.css";
 
 type Difficulty = "basic" | "advanced" | "expert";
@@ -124,16 +126,67 @@ const GameScreen: React.FC<GameScreenProps> = ({ onLogout }) => {
   const [streak, setStreak] = useState(0);
   const [bestStreak, setBestStreak] = useState(0);
   const [isStarting, setIsStarting] = useState(false);
+  
+  // Gestor de estados de paneles usando Map (HashMap)
+  const panelManager = useRef(new PanelStateManager({
+    'history': false,
+    'leaderboard': false
+  }));
+  const [panelStates, setPanelStates] = useState(panelManager.current.getAllStates());
+
+  // Gestor de layout usando Array de configuraciones
+  const layoutManager = useRef(new LayoutManager([
+    {
+      id: 'game-panel',
+      name: 'Desafío Matemático',
+      order: 0,
+      visible: true,
+      priority: 'high',
+      minHeight: 550
+    },
+    {
+      id: 'stats-panel',
+      name: 'Estadísticas',
+      order: 1,
+      visible: true,
+      priority: 'high',
+      minHeight: 200
+    },
+    {
+      id: 'history-panel',
+      name: 'Historial Stack',
+      order: 2,
+      visible: true,
+      priority: 'medium',
+      minHeight: 150
+    },
+    {
+      id: 'leaderboard-panel',
+      name: 'Historial LinkedList',
+      order: 3,
+      visible: true,
+      priority: 'medium',
+      minHeight: 150
+    }
+  ]));
 
   const apiUrl = useMemo(
     () => import.meta.env.VITE_API_URL ?? "http://localhost:8080",
     []
   );
 
+  // Función para alternar el estado de un panel usando PanelStateManager
+  const togglePanel = useCallback((panelId: string) => {
+    panelManager.current.togglePanel(panelId);
+    setPanelStates(panelManager.current.getAllStates());
+  }, []);
+
   // Estructuras de datos utilizadas:
   // - Queue: Cola para gestionar preguntas pendientes (FIFO)
   // - Stack: Pila para historial de intentos (LIFO)
-  // - LinkedList: Lista enlazada para el leaderboard (más abajo)
+  // - LinkedList: Lista enlazada para el leaderboard
+  // - Map (HashMap): PanelStateManager para gestionar estado de paneles expandidos/colapsados
+  // - Array: LayoutManager para gestionar orden y configuración de paneles del layout
   const questionQueue = useRef(new Queue<Question>());
   const startTimestampRef = useRef<number | null>(null);
   const historyStack = useRef(new Stack<HistoryEntry>());
@@ -648,72 +701,133 @@ const GameScreen: React.FC<GameScreenProps> = ({ onLogout }) => {
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.3 }}
+          className="history-container"
         >
-          <Card className="history-panel game-card">
-            <h2>📜 Intentos recientes (Stack)</h2>
-          {history.length === 0 ? (
-            <p>Aún no hay intentos registrados.</p>
-          ) : (
-            <ul className="history-list">
-              {history.map((entry, index) => (
-                <motion.li
-                  key={`${entry.timestamp}-${index}`}
-                  initial={{ x: -20, opacity: 0 }}
-                  animate={{ x: 0, opacity: 1 }}
-                  transition={{ delay: index * 0.1 }}
-                  whileHover={{ scale: 1.02 }}
-                >
-                  <span className={entry.isCorrect ? "correct" : "incorrect"}>
-                    {entry.isCorrect ? "✔" : "✘"}
-                  </span>
-                  <span className="history-question">{entry.question}</span>
-                  <span className="history-answer">Tu respuesta: {entry.playerAnswer}</span>
-                  <span className="history-answer">Correcta: {entry.correctAnswer}</span>
-                  <span className="history-time">{entry.timestamp}</span>
-                </motion.li>
-              ))}
-            </ul>
-          )}
-        </Card>
+          <Card className="history-panel game-card horizontal">
+            <div className="history-header">
+              <h2>
+                📜 Intentos recientes
+                <span className="data-structure-badge" title="Estructura: Stack (Pila LIFO - Last In First Out)">
+                  Stack
+                </span>
+              </h2>
+              <button 
+                className="toggle-history-btn"
+                onClick={() => togglePanel('history')}
+                aria-label={panelStates.history ? "Colapsar historial" : "Expandir historial"}
+              >
+                {panelStates.history ? "▼" : "▶"}
+              </button>
+            </div>
+            {panelStates.history && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: "auto", opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.3 }}
+              >
+                {history.length === 0 ? (
+                  <p>Aún no hay intentos registrados.</p>
+                ) : (
+                  <ul className="history-list horizontal">
+                    {history.map((entry, index) => (
+                      <motion.li
+                        key={`${entry.timestamp}-${index}`}
+                        initial={{ x: -20, opacity: 0 }}
+                        animate={{ x: 0, opacity: 1 }}
+                        transition={{ delay: index * 0.1 }}
+                        whileHover={{ scale: 1.05 }}
+                      >
+                        <span className={entry.isCorrect ? "correct" : "incorrect"}>
+                          {entry.isCorrect ? "✔" : "✘"}
+                        </span>
+                        <span className="history-question">{entry.question}</span>
+                        <span className="history-answer">Tu: {entry.playerAnswer}</span>
+                        <span className="history-answer">✓: {entry.correctAnswer}</span>
+                        <span className="history-time">{entry.timestamp}</span>
+                      </motion.li>
+                    ))}
+                  </ul>
+                )}
+              </motion.div>
+            )}
+          </Card>
         </motion.div>
 
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.4 }}
+          className="leaderboard-container"
         >
-          <Card className="leaderboard-panel game-card">
-            <h2>🏅 Historial reciente (LinkedList)</h2>
-          {loading ? (
-            <p>⏳ Cargando resultados...</p>
-          ) : leaderboard.length === 0 ? (
-            <p>Aún no hay intentos registrados.</p>
-          ) : (
-            <ul className="leaderboard-list">
-              {leaderboard.map((game, index) => (
-                <motion.li
-                  key={game.id}
-                  initial={{ x: -20, opacity: 0 }}
-                  animate={{ x: 0, opacity: 1 }}
-                  transition={{ delay: index * 0.1 }}
-                  whileHover={{ scale: 1.02 }}
-                >
-                  <div>
-                    <strong>👤 {game.playerName}</strong> — {game.difficulty}
-                  </div>
-                  <div>
-                    🎯 Puntaje: {game.score} · ✅ Aciertos: {game.correctAnswers}/{game.totalQuestions}
-                  </div>
-                  <div>
-                    ⏱️ Duración: {game.durationSeconds}s — 📅 {game.createdAt
-                      ? new Date(game.createdAt).toLocaleString()
-                      : "Sin fecha"}
-                  </div>
-                </motion.li>
-              ))}
-            </ul>
-          )}
-        </Card>
+          <Card className="leaderboard-panel game-card horizontal">
+            <div className="leaderboard-header">
+              <h2>
+                🏅 Historial reciente
+                <span className="data-structure-badge" title="Estructura: LinkedList (Lista Enlazada)">
+                  LinkedList
+                </span>
+              </h2>
+              <button 
+                className="toggle-leaderboard-btn"
+                onClick={() => togglePanel('leaderboard')}
+                aria-label={panelStates.leaderboard ? "Colapsar historial" : "Expandir historial"}
+              >
+                {panelStates.leaderboard ? "▼" : "▶"}
+              </button>
+            </div>
+            {panelStates.leaderboard && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: "auto", opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.3 }}
+              >
+                {loading ? (
+                  <p>⏳ Cargando resultados...</p>
+                ) : leaderboard.length === 0 ? (
+                  <p>Aún no hay intentos registrados.</p>
+                ) : (
+                  <ul className="leaderboard-list horizontal">
+                    {leaderboard.map((game, index) => (
+                      <motion.li
+                        key={game.id}
+                        initial={{ x: -20, opacity: 0 }}
+                        animate={{ x: 0, opacity: 1 }}
+                        transition={{ delay: index * 0.1 }}
+                        whileHover={{ scale: 1.05 }}
+                      >
+                        <div className="leaderboard-player">
+                          <strong>👤 {game.playerName}</strong>
+                          <span className="difficulty-badge">{game.difficulty}</span>
+                        </div>
+                        <div className="leaderboard-score">
+                          🎯 Puntaje: <strong>{game.score}</strong>
+                        </div>
+                        <div className="leaderboard-stats">
+                          ✅ Aciertos: {game.correctAnswers}/{game.totalQuestions}
+                        </div>
+                        <div className="leaderboard-time">
+                          ⏱️ {game.durationSeconds}s
+                        </div>
+                        <div className="leaderboard-date">
+                          📅 {game.createdAt
+                            ? new Date(game.createdAt).toLocaleDateString('es-ES', { 
+                                day: '2-digit', 
+                                month: '2-digit',
+                                year: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                              })
+                            : "Sin fecha"}
+                        </div>
+                      </motion.li>
+                    ))}
+                  </ul>
+                )}
+              </motion.div>
+            )}
+          </Card>
         </motion.div>
       </div>
     </div>
