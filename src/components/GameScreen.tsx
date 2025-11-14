@@ -126,7 +126,7 @@ const GameScreen: React.FC<GameScreenProps> = ({ onLogout }) => {
   const [streak, setStreak] = useState(0);
   const [bestStreak, setBestStreak] = useState(0);
   const [isStarting, setIsStarting] = useState(false);
-  
+
   // Gestor de estados de paneles usando Map (HashMap)
   const panelManager = useRef(new PanelStateManager({
     'history': false,
@@ -420,12 +420,12 @@ const GameScreen: React.FC<GameScreenProps> = ({ onLogout }) => {
     const durationSeconds = computeDurationSeconds();
 
     await persistGameState(score, correctAnswers, totalQuestions, durationSeconds);
-    
+
     // Actualizar high score en el backend si el usuario está logueado
     if (currentUser && score > currentUser.highScore) {
       await authService.updateHighScore(currentUser.id, score);
     }
-    
+
     startTimestampRef.current = null;
     setSaving(false);
     setSessionId(null);
@@ -471,239 +471,249 @@ const GameScreen: React.FC<GameScreenProps> = ({ onLogout }) => {
   return (
     <div className="game-screen">
       <Background level={difficulty} />
-      
-      {/* User Header */}
-      {currentUser && (
-        <motion.div
-          className="user-header"
-          initial={{ y: -50, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 0.5 }}
-        >
-          <div className="user-info">
-            <span className="user-icon">👤</span>
-            <div className="user-details">
-              <span className="user-nickname">{currentUser.nickname}</span>
-              <span className="user-username">@{currentUser.username}</span>
-            </div>
-            <div className="user-score">
-              <span className="trophy-icon">🏆</span>
-              <span className="high-score">{currentUser.highScore}</span>
-            </div>
-          </div>
-          {onLogout && (
-            <button className="logout-button" onClick={onLogout}>
-              🚪 Salir
-            </button>
-          )}
-        </motion.div>
-      )}
-      
+
       <div className="game-container">
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.1 }}
-        >
-          <Card className="game-panel game-card">
+        {/* Left Column: Game Panel */}
+        <div className="game-panel-container">
           <motion.div
-            className="panel-header"
-            initial={{ y: -20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 0.2 }}
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.1 }}
           >
-            <h1>🎯 Desafío Matemático</h1>
-            <Timer timeRemaining={timeRemaining} />
-          </motion.div>
+            <Card className="game-panel game-card">
+            <motion.div
+              className="panel-header"
+              initial={{ y: -20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.2 }}
+            >
+              <h1>🎯 Desafío Matemático</h1>
+              <Timer timeRemaining={timeRemaining} />
+            </motion.div>
 
-          <motion.div
-            initial={{ x: -20, opacity: 0 }}
-            animate={{ x: 0, opacity: 1 }}
-            transition={{ delay: 0.3 }}
-          >
-            <p className="player-label">
-              Jugador:
-              <Input
-                value={playerName}
-                onChange={handlePlayerNameChange}
-                placeholder="Nombre del jugador"
-                className="player-input"
+            <motion.div
+              initial={{ x: -20, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              transition={{ delay: 0.3 }}
+            >
+              <p className="player-label">
+                Jugador:
+                <Input
+                  value={playerName}
+                  onChange={handlePlayerNameChange}
+                  placeholder="Nombre del jugador"
+                  className="player-input"
+                  disabled={gameActive}
+                />
+              </p>
+            </motion.div>
+
+            <motion.div
+              className="difficulty-selector"
+              initial={{ x: -20, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              transition={{ delay: 0.4 }}
+            >
+              <Button
+                onClick={() => handleDifficultyChange("basic")}
                 disabled={gameActive}
-              />
-            </p>
-          </motion.div>
+                className={difficulty === "basic" ? "selected" : ""}
+              >
+                🌟 Básica
+              </Button>
+              <Button
+                onClick={() => handleDifficultyChange("advanced")}
+                disabled={gameActive}
+                className={difficulty === "advanced" ? "selected" : ""}
+              >
+                🔥 Avanzada
+              </Button>
+              <Button
+                onClick={() => handleDifficultyChange("expert")}
+                disabled={gameActive}
+                className={difficulty === "expert" ? "selected" : ""}
+              >
+                💎 Experta
+              </Button>
+            </motion.div>
 
-          <motion.div
-            className="difficulty-selector"
-            initial={{ x: -20, opacity: 0 }}
-            animate={{ x: 0, opacity: 1 }}
-            transition={{ delay: 0.4 }}
-          >
-            <Button
-              onClick={() => handleDifficultyChange("basic")}
-              disabled={gameActive}
-              className={difficulty === "basic" ? "selected" : ""}
-            >
-              🌟 Básica
-            </Button>
-            <Button
-              onClick={() => handleDifficultyChange("advanced")}
-              disabled={gameActive}
-              className={difficulty === "advanced" ? "selected" : ""}
-            >
-              🔥 Avanzada
-            </Button>
-            <Button
-              onClick={() => handleDifficultyChange("expert")}
-              disabled={gameActive}
-              className={difficulty === "expert" ? "selected" : ""}
-            >
-              💎 Experta
-            </Button>
-          </motion.div>
-
-          <motion.div
-            className="question-wrapper"
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ delay: 0.5, type: "spring", stiffness: 100 }}
-          >
-            <h2>📝 Resuelve:</h2>
-            <motion.p
-              className="question-display"
-              key={currentQuestion?.prompt}
-              initial={{ scale: 0.8, opacity: 0 }}
+            <motion.div
+              className="question-wrapper"
+              initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
-              transition={{ duration: 0.4 }}
+              transition={{ delay: 0.5, type: "spring", stiffness: 100 }}
             >
-              {currentQuestion ? currentQuestion.prompt : "⏳ Generando desafío..."}
-            </motion.p>
-            <Input
-              value={userAnswer}
-              onChange={handleAnswerChange}
-              placeholder="Escribe tu resultado"
-              type="number"
-              onKeyDown={handleAnswerKeyDown}
-              className="answer-input"
-            />
-            <div className="action-buttons">
-              <Button
-                onClick={handleSubmitAnswer}
-                disabled={!gameActive || !currentQuestion || isStarting}
-                className="primary"
-              >
-                ✓ Comprobar resultado
-              </Button>
-              <Button
-                onClick={finishGame}
-                disabled={isStarting || saving}
-                className="secondary"
-              >
-                ⏹ Terminar partida
-              </Button>
-            </div>
-            <Button
-              onClick={startGame}
-              disabled={gameActive || isStarting}
-              className="ghost"
-            >
-              {isStarting ? "⏳ Preparando partida..." : "🎮 Nueva partida"}
-            </Button>
-          </motion.div>
-
-          <div className="feedback-area">
-            {feedback && (
+              <h2>📝 Resuelve:</h2>
               <motion.p
-                className={`feedback feedback-${feedback}`}
+                className="question-display"
+                key={currentQuestion?.prompt}
                 initial={{ scale: 0.8, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
-                transition={{ duration: 0.3 }}
+                transition={{ duration: 0.4 }}
               >
-                {feedback === "correct" ? "🎉 ¡Excelente!" : "❌ Respuesta incorrecta."}
+                {currentQuestion ? currentQuestion.prompt : "⏳ Generando desafío..."}
               </motion.p>
-            )}
-            {statusMessage && (
-              <motion.p
-                className="status-message"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
+              <Input
+                value={userAnswer}
+                onChange={handleAnswerChange}
+                placeholder="Escribe tu resultado"
+                type="number"
+                onKeyDown={handleAnswerKeyDown}
+                className="answer-input"
+              />
+              <div className="action-buttons">
+                <Button
+                  onClick={handleSubmitAnswer}
+                  disabled={!gameActive || !currentQuestion || isStarting}
+                  className="primary"
+                >
+                  ✓ Comprobar resultado
+                </Button>
+                <Button
+                  onClick={finishGame}
+                  disabled={isStarting || saving}
+                  className="secondary"
+                >
+                  ⏹ Terminar partida
+                </Button>
+              </div>
+              <Button
+                onClick={startGame}
+                disabled={gameActive || isStarting}
+                className="ghost"
               >
-                {statusMessage}
-              </motion.p>
-            )}
-            {error && (
-              <motion.p
-                className="error-message"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-              >
-                {error}
-              </motion.p>
-            )}
-            {saving && (
-              <motion.p
-                className="status-message"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-              >
-                💾 Sincronizando con la base de datos...
-              </motion.p>
-            )}
-          </div>
-        </Card>
-        </motion.div>
+                {isStarting ? "⏳ Preparando partida..." : "🎮 Nueva partida"}
+              </Button>
+            </motion.div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.2 }}
-        >
-          <Card className="stats-panel game-card">
+            <div className="feedback-area">
+              {feedback && (
+                <motion.p
+                  className={`feedback feedback-${feedback}`}
+                  initial={{ scale: 0.8, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  {feedback === "correct" ? "🎉 ¡Excelente!" : "❌ Respuesta incorrecta."}
+                </motion.p>
+              )}
+              {statusMessage && (
+                <motion.p
+                  className="status-message"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                >
+                  {statusMessage}
+                </motion.p>
+              )}
+              {error && (
+                <motion.p
+                  className="error-message"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                >
+                  {error}
+                </motion.p>
+              )}
+              {saving && (
+                <motion.p
+                  className="status-message"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                >
+                  💾 Sincronizando con la base de datos...
+                </motion.p>
+              )}
+            </div>
+          </Card>
+        </motion.div>
+        </div>
+
+        {/* Right Column: User Header + Stats + History + Leaderboard */}
+        <div className="user-header-container">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+          >
+            <Card className="user-header game-card">
+            {currentUser && (
+              <>
+              <div className="user-info">
+                <span className="user-icon">👤</span>
+                <div className="user-details">
+                  <span className="user-nickname">{currentUser.nickname}</span>
+                  <span className="user-username">@{currentUser.username}</span>
+                </div>
+                <div className="user-score">
+                  <span className="trophy-icon">🏆</span>
+                  <span className="high-score">{currentUser.highScore}</span>
+                </div>
+              </div>
+              {onLogout && (
+                <button className="logout-button" onClick={onLogout}>
+                  🚪 Salir
+                </button>
+              )}
+              </>
+            )}
+            </Card>
+          </motion.div>
+        </div>
+
+        <div className="stats-panel-container">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+          >
+            <Card className="stats-panel game-card">
             <h2>📊 Panel de progreso</h2>
-          <div className="stats-grid">
-            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-              <span>🎯 Puntaje</span>
-              <strong>{score}</strong>
-            </motion.div>
-            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-              <span>🏆 Mejor puntaje</span>
-              <strong>{bestScore}</strong>
-            </motion.div>
-            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-              <span>📈 Dificultad</span>
-              <strong>{difficulty}</strong>
-            </motion.div>
-            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-              <span>🔥 Racha</span>
-              <strong>{streak}</strong>
-            </motion.div>
-            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-              <span>⚡ Mejor racha</span>
-              <strong>{bestStreak}</strong>
-            </motion.div>
-            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-              <span>📦 Cola (Queue)</span>
-              <strong>{operationsInQueue}</strong>
-            </motion.div>
-            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-              <span>✅ Resueltas</span>
-              <strong>{totalQuestions}</strong>
-            </motion.div>
-            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-              <span>⏱️ Tiempo restante</span>
-              <strong>{timeRemaining}s</strong>
-            </motion.div>
-          </div>
-        </Card>
+            <div className="stats-grid">
+              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                <span>🎯 Puntaje</span>
+                <strong>{score}</strong>
+              </motion.div>
+              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                <span>🏆 Mejor puntaje</span>
+                <strong>{bestScore}</strong>
+              </motion.div>
+              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                <span>📈 Dificultad</span>
+                <strong>{difficulty}</strong>
+              </motion.div>
+              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                <span>🔥 Racha</span>
+                <strong>{streak}</strong>
+              </motion.div>
+              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                <span>⚡ Mejor racha</span>
+                <strong>{bestStreak}</strong>
+              </motion.div>
+              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                <span>📦 Cola (Queue)</span>
+                <strong>{operationsInQueue}</strong>
+              </motion.div>
+              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                <span>✅ Resueltas</span>
+                <strong>{totalQuestions}</strong>
+              </motion.div>
+              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                <span>⏱️ Tiempo restante</span>
+                <strong>{timeRemaining}s</strong>
+              </motion.div>
+            </div>
+          </Card>
         </motion.div>
+        </div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.3 }}
-          className="history-container"
-        >
-          <Card className="history-panel game-card horizontal">
+        <div className="history-container">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.3 }}
+          >
+            <Card className="history-panel game-card horizontal">
             <div className="history-header">
               <h2>
                 📜 Intentos recientes
@@ -711,7 +721,7 @@ const GameScreen: React.FC<GameScreenProps> = ({ onLogout }) => {
                   Stack
                 </span>
               </h2>
-              <button 
+              <button
                 className="toggle-history-btn"
                 onClick={() => togglePanel('history')}
                 aria-label={panelStates.history ? "Colapsar historial" : "Expandir historial"}
@@ -752,15 +762,16 @@ const GameScreen: React.FC<GameScreenProps> = ({ onLogout }) => {
               </motion.div>
             )}
           </Card>
-        </motion.div>
+          </motion.div>
+        </div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.4 }}
-          className="leaderboard-container"
-        >
-          <Card className="leaderboard-panel game-card horizontal">
+        <div className="leaderboard-container">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.4 }}
+          >
+            <Card className="leaderboard-panel game-card horizontal">
             <div className="leaderboard-header">
               <h2>
                 🏅 Historial reciente
@@ -768,7 +779,7 @@ const GameScreen: React.FC<GameScreenProps> = ({ onLogout }) => {
                   LinkedList
                 </span>
               </h2>
-              <button 
+              <button
                 className="toggle-leaderboard-btn"
                 onClick={() => togglePanel('leaderboard')}
                 aria-label={panelStates.leaderboard ? "Colapsar historial" : "Expandir historial"}
@@ -812,13 +823,13 @@ const GameScreen: React.FC<GameScreenProps> = ({ onLogout }) => {
                         </div>
                         <div className="leaderboard-date">
                           📅 {game.createdAt
-                            ? new Date(game.createdAt).toLocaleDateString('es-ES', { 
-                                day: '2-digit', 
-                                month: '2-digit',
-                                year: 'numeric',
-                                hour: '2-digit',
-                                minute: '2-digit'
-                              })
+                            ? new Date(game.createdAt).toLocaleDateString('es-ES', {
+                              day: '2-digit',
+                              month: '2-digit',
+                              year: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            })
                             : "Sin fecha"}
                         </div>
                       </motion.li>
@@ -828,7 +839,8 @@ const GameScreen: React.FC<GameScreenProps> = ({ onLogout }) => {
               </motion.div>
             )}
           </Card>
-        </motion.div>
+          </motion.div>
+        </div>
       </div>
     </div>
   );
