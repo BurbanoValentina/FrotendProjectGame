@@ -92,8 +92,16 @@ const generateQuestion = (difficulty: Difficulty): Question => {
   return { prompt: `(${a} + ${b}) - ${subtrahend}`, answer: a + b - subtrahend };
 };
 
-const GameScreen: React.FC = () => {
-  const [playerName, setPlayerName] = useState("Invitado");
+import AuthService from "../services/AuthService";
+
+interface GameScreenProps {
+  onLogout?: () => void;
+}
+
+const GameScreen: React.FC<GameScreenProps> = ({ onLogout }) => {
+  const authService = AuthService.getInstance();
+  const currentUser = authService.getCurrentUser();
+  const [playerName, setPlayerName] = useState(currentUser?.nickname || "Invitado");
   const [difficulty, setDifficulty] = useState<Difficulty>("basic");
   const [games, setGames] = useState<GameResult[]>([]);
   const [currentQuestion, setCurrentQuestion] = useState<Question | null>(null);
@@ -353,6 +361,12 @@ const GameScreen: React.FC = () => {
     const durationSeconds = computeDurationSeconds();
 
     await persistGameState(score, correctAnswers, totalQuestions, durationSeconds);
+    
+    // Actualizar high score en el backend si el usuario está logueado
+    if (currentUser && score > currentUser.highScore) {
+      await authService.updateHighScore(currentUser.id, score);
+    }
+    
     startTimestampRef.current = null;
     setSaving(false);
     setSessionId(null);
@@ -398,6 +412,29 @@ const GameScreen: React.FC = () => {
   return (
     <div className="game-screen">
       <Background level={difficulty} />
+      
+      {/* User Header */}
+      {currentUser && (
+        <div className="user-header">
+          <div className="user-info">
+            <span className="user-icon">👤</span>
+            <div className="user-details">
+              <span className="user-nickname">{currentUser.nickname}</span>
+              <span className="user-username">@{currentUser.username}</span>
+            </div>
+            <div className="user-score">
+              <span className="trophy-icon">🏆</span>
+              <span className="high-score">{currentUser.highScore}</span>
+            </div>
+          </div>
+          {onLogout && (
+            <button className="logout-button" onClick={onLogout}>
+              🚪 Salir
+            </button>
+          )}
+        </div>
+      )}
+      
       <div className="game-container">
         <Card className="game-panel">
           <div className="panel-header">
