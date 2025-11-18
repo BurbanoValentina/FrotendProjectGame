@@ -1,0 +1,135 @@
+.game-mode-selection {
+  position: relative;
+  width: 100%;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+}
+
+.mode-selection-container {
+  position: relative;
+  z-index: 10;
+  background: rgba(255, 255, 255, 0.95);
+  padding: 60px 80px;
+  border-radius: 30px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  text-align: center;
+  max-width: 800px;
+  width: 90%;
+}
+
+.mode-title {
+  font-size: 3rem;
+  font-weight: 800;
+  color: #2c3e50;
+  margin-bottom: 20px;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.mode-subtitle {
+  font-size: 1.3rem;
+  color: #555;
+  margin-bottom: 50px;
+  font-weight: 500;
+}
+
+.mode-buttons-container {
+  display: flex;
+  gap: 30px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.mode-button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 15px;
+  padding: 40px 50px;
+  min-width: 280px;
+  height: auto;
+  font-size: 1.1rem;
+  border-radius: 20px;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.mode-button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  transition: left 0.5s ease;
+}
+
+.mode-button:hover::before {
+  left: 100%;
+}
+
+.mode-button:hover {
+  transform: translateY(-10px);
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
+}
+
+.chatbot-button {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.chatbot-button:hover {
+  background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+}
+
+.multiplayer-button {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+}
+
+.multiplayer-button:hover {
+  background: linear-gradient(135deg, #f5576c 0%, #f093fb 100%);
+}
+
+.button-icon {
+  font-size: 3rem;
+  line-height: 1;
+}
+
+.button-text {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: white;
+}
+
+.button-description {
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.9);
+  font-weight: 400;
+}
+
+@media (max-width: 768px) {
+  .mode-selection-container {
+    padding: 40px 30px;
+  }
+
+  .mode-title {
+    font-size: 2rem;
+  }
+
+  .mode-subtitle {
+    font-size: 1rem;
+  }
+
+  .mode-buttons-container {
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .mode-button {
+    min-width: 100%;
+    padding: 30px 40px;
+  }
+}

@@ -100,9 +100,10 @@ import AuthService from "../services/AuthService";
 
 interface GameScreenProps {
   onLogout?: () => void;
+  onBack?: () => void;
 }
 
-const GameScreen: React.FC<GameScreenProps> = ({ onLogout }) => {
+const GameScreen: React.FC<GameScreenProps> = ({ onLogout, onBack }) => {
   const authService = AuthService.getInstance();
   const currentUser = authService.getCurrentUser();
   const [playerName, setPlayerName] = useState(currentUser?.nickname || "Invitado");
@@ -650,11 +651,18 @@ const GameScreen: React.FC<GameScreenProps> = ({ onLogout }) => {
                   <span className="high-score">{currentUser.highScore}</span>
                 </div>
               </div>
-              {onLogout && (
-                <button className="logout-button" onClick={onLogout}>
-                  🚪 Salir
-                </button>
-              )}
+              <div className="game-navigation-buttons">
+                {onBack && (
+                  <button className="back-button" onClick={onBack}>
+                    ← Volver
+                  </button>
+                )}
+                {onLogout && (
+                  <button className="logout-button" onClick={onLogout}>
+                    🚪 Salir
+                  </button>
+                )}
+              </div>
               </>
             )}
             </Card>

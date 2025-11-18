@@ -83,21 +83,41 @@
   color: white;
 }
 
-.logout-button {
+.game-navigation-buttons {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.logout-button,
+.back-button {
   padding: 8px 16px;
   border: none;
   border-radius: 10px;
-  background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
   color: white;
   font-size: 0.9rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
+}
+
+.logout-button {
+  background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
   box-shadow: 0 4px 12px rgba(255, 107, 107, 0.3);
 }
 
 .logout-button:hover {
   box-shadow: 0 8px 20px rgba(255, 107, 107, 0.4);
+  transform: translateY(-2px);
+}
+
+.back-button {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.back-button:hover {
+  box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
   transform: translateY(-2px);
 }
 
