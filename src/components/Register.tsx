@@ -23,6 +23,12 @@ const Register: React.FC<RegisterProps> = ({ onRegisterSuccess, onSwitchToLogin 
     setError('');
     setLoading(true);
 
+    if (username.includes(' ') || password.includes(' ') || confirmPassword.includes(' ') || nickname.includes(' ')) {
+      setError('Ningún campo puede contener espacios');
+      setLoading(false);
+      return;
+    }
+
     const sanitizedUsername = username.trim();
     const sanitizedPassword = password.trim();
     const sanitizedConfirm = confirmPassword.trim();
