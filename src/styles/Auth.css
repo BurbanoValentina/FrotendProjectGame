@@ -283,6 +283,22 @@
   text-decoration: underline;
 }
 
+.forgot-password-button {
+  background: none;
+  border: none;
+  color: #667eea;
+  font-weight: 600;
+  cursor: pointer;
+  align-self: flex-end;
+  margin-top: -10px;
+  transition: color 0.2s ease;
+}
+
+.forgot-password-button:hover {
+  color: #764ba2;
+  text-decoration: underline;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .auth-card {

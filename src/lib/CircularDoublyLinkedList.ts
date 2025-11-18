@@ -32,6 +32,42 @@ export class CircularDoublyLinkedList<T> {
     this.head.prev = newNode;
   }
 
+  getHeadValue(): T | null {
+    return this.head ? this.head.value : null;
+  }
+
+  getNextValue(currentValue?: T | null): T | null {
+    if (!this.head) return null;
+    if (currentValue === undefined || currentValue === null) {
+      return this.head.value;
+    }
+
+    let current = this.head;
+    do {
+      if (current.value === currentValue) {
+        return current.next ? current.next.value : null;
+      }
+      current = current.next!;
+    } while (current !== this.head);
+
+    return this.head.value;
+  }
+
+  toArray(limit = 100): T[] {
+    if (!this.head) return [];
+    const result: T[] = [];
+    let current = this.head;
+    let count = 0;
+
+    do {
+      result.push(current.value);
+      current = current.next!;
+      count += 1;
+    } while (current !== this.head && count < limit);
+
+    return result;
+  }
+
   remove(value: T): void {
     if (!this.head) return;
 

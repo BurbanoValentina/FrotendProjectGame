@@ -39,12 +39,17 @@ class AuthService {
   // Registrar usuario
   async register(username: string, password: string, nickname: string): Promise<AuthResponse> {
     try {
+      const payload = {
+        username: username.trim(),
+        password: password.trim(),
+        nickname: nickname.trim(),
+      };
       const response = await fetch(`${this.API_URL}/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ username, password, nickname }),
+        body: JSON.stringify(payload),
       });
 
       const data: AuthResponse = await response.json();
@@ -67,12 +72,16 @@ class AuthService {
   // Iniciar sesión
   async login(username: string, password: string): Promise<AuthResponse> {
     try {
+      const payload = {
+        username: username.trim(),
+        password: password.trim(),
+      };
       const response = await fetch(`${this.API_URL}/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ username, password }),
+        body: JSON.stringify(payload),
       });
 
       const data: AuthResponse = await response.json();

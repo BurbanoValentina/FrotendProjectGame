@@ -23,38 +23,54 @@ const Register: React.FC<RegisterProps> = ({ onRegisterSuccess, onSwitchToLogin 
     setError('');
     setLoading(true);
 
+    const sanitizedUsername = username.trim();
+    const sanitizedPassword = password.trim();
+    const sanitizedConfirm = confirmPassword.trim();
+    const sanitizedNickname = nickname.trim();
+
+    if (!sanitizedUsername || !sanitizedPassword || !sanitizedConfirm || !sanitizedNickname) {
+      setError('Ningún campo puede estar vacío o contener solo espacios');
+      setLoading(false);
+      return;
+    }
+
+    setUsername(sanitizedUsername);
+    setPassword(sanitizedPassword);
+    setConfirmPassword(sanitizedConfirm);
+    setNickname(sanitizedNickname);
+
     // Validaciones del lado del cliente
-    if (username.length < 5 || username.length > 15) {
+    if (sanitizedUsername.length < 5 || sanitizedUsername.length > 15) {
       setError('El usuario debe tener entre 5 y 15 caracteres');
       setLoading(false);
       return;
     }
 
-    if (!/^[a-zA-Z0-9_]+$/.test(username)) {
+    if (!/^[a-zA-Z0-9_]+$/.test(sanitizedUsername)) {
       setError('El usuario solo puede contener letras, números y guiones bajos');
       setLoading(false);
       return;
     }
 
-    if (password.length < 5 || password.length > 15) {
+    if (sanitizedPassword.length < 5 || sanitizedPassword.length > 15) {
       setError('La contraseña debe tener entre 5 y 15 caracteres');
       setLoading(false);
       return;
     }
 
-    if (password !== confirmPassword) {
+    if (sanitizedPassword !== sanitizedConfirm) {
       setError('Las contraseñas no coinciden');
       setLoading(false);
       return;
     }
 
-    if (nickname.length < 5 || nickname.length > 15) {
+    if (sanitizedNickname.length < 5 || sanitizedNickname.length > 15) {
       setError('El apodo debe tener entre 5 y 15 caracteres');
       setLoading(false);
       return;
     }
 
-    const response = await authService.register(username, password, nickname);
+    const response = await authService.register(sanitizedUsername, sanitizedPassword, sanitizedNickname);
     setLoading(false);
 
     if (response.success) {

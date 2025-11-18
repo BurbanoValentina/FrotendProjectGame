@@ -15,26 +15,44 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess, onSwitchToRegister }) => 
   const [loading, setLoading] = useState(false);
 
   const authService = AuthService.getInstance();
+  const handleForgotPassword = () => {
+    const supportEmail = 'soporte@gamechallenge.com';
+    if (typeof window !== 'undefined') {
+      window.open(`mailto:${supportEmail}?subject=Recuperar%20contraseña`, '_blank');
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setLoading(true);
 
+    const sanitizedUsername = username.trim();
+    const sanitizedPassword = password.trim();
+
+    if (!sanitizedUsername || !sanitizedPassword) {
+      setError('No se permiten campos vacíos o con solo espacios');
+      setLoading(false);
+      return;
+    }
+
+    setUsername(sanitizedUsername);
+    setPassword(sanitizedPassword);
+
     // Validación del lado del cliente
-    if (username.length < 5 || username.length > 15) {
+    if (sanitizedUsername.length < 5 || sanitizedUsername.length > 15) {
       setError('El usuario debe tener entre 5 y 15 caracteres');
       setLoading(false);
       return;
     }
 
-    if (password.length < 5 || password.length > 15) {
+    if (sanitizedPassword.length < 5 || sanitizedPassword.length > 15) {
       setError('La contraseña debe tener entre 5 y 15 caracteres');
       setLoading(false);
       return;
     }
 
-    const response = await authService.login(username, password);
+    const response = await authService.login(sanitizedUsername, sanitizedPassword);
     setLoading(false);
 
     if (response.success) {
@@ -119,6 +137,17 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess, onSwitchToRegister }) => 
               ⚠️ {error}
             </motion.div>
           )}
+
+          <motion.button
+            type="button"
+            className="forgot-password-button"
+            onClick={handleForgotPassword}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5 }}
+          >
+            ¿Olvidaste tu contraseña?
+          </motion.button>
 
           <motion.button
             type="submit"

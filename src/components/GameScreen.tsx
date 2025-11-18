@@ -13,11 +13,16 @@ import Card from "./Card";
 import Input from "./Input";
 import Timer from "./Timer";
 import Background from "./Background";
+import CountdownOverlay from "./CountdownOverlay";
+import GameSummaryCard from "./GameSummaryCard";
+import ChatbotBubble from "./ChatbotBubble";
 import { Queue } from "../lib/Queue";
 import { LinkedList } from "../lib/LinkedList";
 import { Stack } from "../lib/Stack";
 import { PanelStateManager } from "../lib/PanelStateManager";
-import { LayoutManager, PanelConfig } from "../lib/LayoutManager";
+import { LayoutManager } from "../lib/LayoutManager";
+import { CircularDoublyLinkedList } from "../lib/CircularDoublyLinkedList";
+import confetti from "canvas-confetti";
 import "../styles/GameScreen.css";
 
 type Difficulty = "basic" | "advanced" | "expert";
@@ -53,6 +58,54 @@ const DIFFICULTY_TIME: Record<Difficulty, number> = {
 };
 
 const SCORE_PER_CORRECT = 10;
+const COUNTDOWN_START = 3;
+
+const PERFORMANCE_LEVELS = [
+  {
+    min: 12,
+    label: "Leyenda",
+    description: "¡Rompiste la tabla! Mantén ese ritmo imparable.",
+  },
+  {
+    min: 10,
+    label: "Excelente",
+    description: "Nivel competitivo asegurado. ¡Sigue así!",
+  },
+  {
+    min: 8,
+    label: "Bueno",
+    description: "Tu precisión ya mete presión al bot.",
+  },
+  {
+    min: 5,
+    label: "Vas mejorando",
+    description: "Cada respuesta suma, ¡no te detengas!",
+  },
+  {
+    min: 0,
+    label: "Calentando",
+    description: "Todos empiezan por aquí. ¡La próxima será mejor!",
+  },
+];
+
+const BOT_TAUNTS = [
+  "¿Eso fue bostezar o pensar?",
+  "Vamos, humano, que me duermo...",
+  "Estoy respondiendo con una sola mano 😴",
+  "¿Seguro que no quieres practicar antes?",
+  "Mi procesador está frío, dame pelea",
+  "3, 2, 1... oh, ¿sigo esperando tu respuesta?",
+  "Me río porque me sobra tiempo 😂",
+  "Si sigo ganando, me ascenderán a jefe final",
+];
+
+const BOT_SPEED: Record<Difficulty, { min: number; max: number }> = {
+  basic: { min: 4, max: 8 },
+  advanced: { min: 6, max: 11 },
+  expert: { min: 8, max: 14 },
+};
+
+type BotMood = "sassy" | "confident" | "panic";
 
 const randomInt = (min: number, max: number): number =>
   Math.floor(Math.random() * (max - min + 1)) + min;
@@ -127,6 +180,29 @@ const GameScreen: React.FC<GameScreenProps> = ({ onLogout, onBack }) => {
   const [streak, setStreak] = useState(0);
   const [bestStreak, setBestStreak] = useState(0);
   const [isStarting, setIsStarting] = useState(false);
+  const [countdownValue, setCountdownValue] = useState<number | null>(null);
+  const [showCountdown, setShowCountdown] = useState(false);
+  const [summaryVisible, setSummaryVisible] = useState(false);
+  const [summaryLabel, setSummaryLabel] = useState("Calentando");
+  const [summaryDescription, setSummaryDescription] = useState("");
+  const [summaryStats, setSummaryStats] = useState<{ correct: number; total: number; score: number; botScore: number }>({
+    correct: 0,
+    total: 0,
+    score: 0,
+    botScore: 0,
+  });
+  const [botScore, setBotScore] = useState(0);
+  const [botSolved, setBotSolved] = useState(0);
+  const [botMessage, setBotMessage] = useState("Listo para jugar 🤖");
+  const [botMood, setBotMood] = useState<BotMood>("sassy");
+  const [botActive, setBotActive] = useState(false);
+  const countdownIntervalRef = useRef<number | null>(null);
+  const botIntervalRef = useRef<number | null>(null);
+  const tauntListRef = useRef(new CircularDoublyLinkedList<string>());
+  const botTauntPointerRef = useRef<string | null>(null);
+  const tensionAudioCtxRef = useRef<AudioContext | null>(null);
+  const lastTickRef = useRef(0);
+  const botMoodRef = useRef<BotMood>("sassy");
 
   // Gestor de estados de paneles usando Map (HashMap)
   const panelManager = useRef(new PanelStateManager({
@@ -191,7 +267,6 @@ const GameScreen: React.FC<GameScreenProps> = ({ onLogout, onBack }) => {
   const questionQueue = useRef(new Queue<Question>());
   const startTimestampRef = useRef<number | null>(null);
   const historyStack = useRef(new Stack<HistoryEntry>());
-  const autostartGuardRef = useRef(false);
 
   const fetchGames = useCallback(async () => {
     setLoading(true);
@@ -242,12 +317,205 @@ const GameScreen: React.FC<GameScreenProps> = ({ onLogout, onBack }) => {
     setTimeRemaining(DIFFICULTY_TIME[difficulty]);
     setStreak(0);
     setBestStreak(0);
+    setSummaryVisible(false);
+    setSummaryStats({ correct: 0, total: 0, score: 0, botScore: 0 });
+    setSummaryLabel("Calentando");
+    setSummaryDescription("");
+    setBotScore(0);
+    setBotSolved(0);
+    setBotActive(false);
+    setCountdownValue(null);
+    setShowCountdown(false);
+    const firstTaunt = tauntListRef.current.getHeadValue();
+    if (firstTaunt) {
+      setBotMessage(firstTaunt);
+      botTauntPointerRef.current = firstTaunt;
+    } else {
+      setBotMessage("Listo para jugar 🤖");
+      botTauntPointerRef.current = null;
+    }
     historyStack.current = new Stack<HistoryEntry>();
     setHistory([]);
     questionQueue.current = new Queue<Question>();
     populateQueue();
     advanceQuestion();
   }, [advanceQuestion, difficulty, populateQueue]);
+
+  useEffect(() => {
+    const list = tauntListRef.current;
+    if (!list.getHeadValue()) {
+      BOT_TAUNTS.forEach((taunt) => list.add(taunt));
+    }
+    const headValue = list.getHeadValue();
+    if (headValue) {
+      botTauntPointerRef.current = headValue;
+      setBotMessage(headValue);
+    }
+  }, []);
+
+  const cycleTaunt = useCallback(() => {
+    const nextValue = tauntListRef.current.getNextValue(botTauntPointerRef.current);
+    botTauntPointerRef.current = nextValue;
+    return nextValue ?? "Te espero en la línea de meta 🤖";
+  }, []);
+
+  const clearCountdown = useCallback(() => {
+    if (countdownIntervalRef.current) {
+      window.clearInterval(countdownIntervalRef.current);
+      countdownIntervalRef.current = null;
+    }
+  }, []);
+
+  const stopBot = useCallback(() => {
+    if (botIntervalRef.current) {
+      window.clearInterval(botIntervalRef.current);
+      botIntervalRef.current = null;
+    }
+    setBotActive(false);
+  }, []);
+
+  const startBot = useCallback(() => {
+    stopBot();
+    setBotScore(0);
+    setBotSolved(0);
+    setBotActive(true);
+    const openingTaunt = cycleTaunt();
+    if (openingTaunt) {
+      setBotMessage(openingTaunt);
+    }
+    botIntervalRef.current = window.setInterval(() => {
+      const solvedBoost = randomInt(1, 2);
+      const { min, max } = BOT_SPEED[difficulty];
+      setBotSolved((prev) => prev + solvedBoost);
+      setBotScore((prev) => prev + solvedBoost * SCORE_PER_CORRECT + randomInt(min, max));
+      if (botMoodRef.current === "sassy") {
+        setBotMessage(cycleTaunt());
+      }
+    }, 3200);
+  }, [cycleTaunt, difficulty, stopBot]);
+
+  useEffect(() => {
+    return () => {
+      stopBot();
+      clearCountdown();
+      if (tensionAudioCtxRef.current) {
+        tensionAudioCtxRef.current.close();
+      }
+    };
+  }, [clearCountdown, stopBot]);
+
+  useEffect(() => {
+    botMoodRef.current = botMood;
+  }, [botMood]);
+
+  const ensureAudioContext = useCallback(() => {
+    if (typeof window === "undefined") {
+      return null;
+    }
+    const extendedWindow = window as Window & typeof globalThis & {
+      webkitAudioContext?: typeof AudioContext;
+    };
+    const ContextClass = window.AudioContext || extendedWindow.webkitAudioContext;
+    if (!ContextClass) {
+      return null;
+    }
+    if (!tensionAudioCtxRef.current) {
+      tensionAudioCtxRef.current = new ContextClass();
+    }
+    if (tensionAudioCtxRef.current.state === "suspended") {
+      void tensionAudioCtxRef.current.resume();
+    }
+    return tensionAudioCtxRef.current;
+  }, []);
+
+  const playPressureTick = useCallback(() => {
+    const ctx = ensureAudioContext();
+    if (!ctx) {
+      return;
+    }
+    const oscillator = ctx.createOscillator();
+    const gain = ctx.createGain();
+    oscillator.type = "triangle";
+    oscillator.frequency.setValueAtTime(900, ctx.currentTime);
+    gain.gain.setValueAtTime(0.0001, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.4, ctx.currentTime + 0.05);
+    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.32);
+    oscillator.connect(gain);
+    gain.connect(ctx.destination);
+    oscillator.start();
+    oscillator.stop(ctx.currentTime + 0.35);
+  }, [ensureAudioContext]);
+
+  useEffect(() => {
+    if (!gameActive) {
+      return;
+    }
+    if (timeRemaining === 0 || timeRemaining > 10) {
+      return;
+    }
+    const now = Date.now();
+    if (now - lastTickRef.current < 400) {
+      return;
+    }
+    lastTickRef.current = now;
+    playPressureTick();
+  }, [gameActive, playPressureTick, timeRemaining]);
+
+  const launchConfetti = useCallback(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+    const duration = 1600;
+    const animationEnd = Date.now() + duration;
+
+    const interval = window.setInterval(() => {
+      confetti({
+        particleCount: 45,
+        startVelocity: 40,
+        spread: 360,
+        ticks: 60,
+        origin: { x: Math.random(), y: Math.random() - 0.2 },
+      });
+
+      if (Date.now() > animationEnd) {
+        window.clearInterval(interval);
+      }
+    }, 250);
+  }, []);
+
+  const getPerformanceLevel = useCallback((correct: number) => {
+    return (
+      PERFORMANCE_LEVELS.find((level) => correct >= level.min) ??
+      PERFORMANCE_LEVELS[PERFORMANCE_LEVELS.length - 1]
+    );
+  }, []);
+
+  useEffect(() => {
+    if (!botActive || !gameActive) {
+      setBotMood("sassy");
+      return;
+    }
+    if (score - botScore >= 20) {
+      setBotMood("panic");
+      return;
+    }
+    if (botScore - score >= 20) {
+      setBotMood("confident");
+      return;
+    }
+    setBotMood("sassy");
+  }, [botActive, botScore, gameActive, score]);
+
+  useEffect(() => {
+    if (!botActive) {
+      return;
+    }
+    if (botMood === "panic") {
+      setBotMessage("¡Me estás dejando atrás! 😳");
+    } else if (botMood === "confident") {
+      setBotMessage("Creo que te estoy ganando 😎");
+    }
+  }, [botActive, botMood]);
 
   const computeDurationSeconds = useCallback(() => {
     if (!startTimestampRef.current) {
@@ -294,14 +562,15 @@ const GameScreen: React.FC<GameScreenProps> = ({ onLogout, onBack }) => {
     [apiUrl, fetchGames, sessionId]
   );
 
-  const startGame = useCallback(async () => {
-    if (gameActive || isStarting) {
+  const startGameSession = useCallback(async () => {
+    if (gameActive) {
+      setIsStarting(false);
       return;
     }
-    const trimmedName = (playerName || "Invitado").trim();
+    const trimmedName = (playerName || "Invitado").trim() || "Invitado";
     setPlayerName(trimmedName);
-    setIsStarting(true);
     setError(null);
+    setStatusMessage(null);
     try {
       const response = await fetch(`${apiUrl}/games/start`, {
         method: "POST",
@@ -324,19 +593,52 @@ const GameScreen: React.FC<GameScreenProps> = ({ onLogout, onBack }) => {
       startTimestampRef.current = Date.now();
       setGameActive(true);
       setSaving(false);
+      startBot();
+      setStatusMessage("¡Vamos! Dale con todo 💪");
     } catch (err) {
       setError("No se pudo iniciar la partida.");
+      setShowCountdown(false);
+      setCountdownValue(null);
     } finally {
       setIsStarting(false);
     }
-  }, [apiUrl, difficulty, gameActive, isStarting, playerName, resetGameState]);
+  }, [apiUrl, difficulty, gameActive, playerName, resetGameState, startBot]);
 
-  useEffect(() => {
-    if (!autostartGuardRef.current) {
-      autostartGuardRef.current = true;
-      startGame();
+  const handleStartRequest = useCallback(() => {
+    if (gameActive || isStarting || showCountdown) {
+      return;
     }
-  }, [startGame]);
+    const trimmedName = (playerName || "").trim();
+    if (!trimmedName) {
+      setStatusMessage("Ingresa un nombre válido antes de iniciar 🤓");
+      return;
+    }
+    ensureAudioContext();
+    setPlayerName(trimmedName);
+    setSummaryVisible(false);
+    setIsStarting(true);
+    setShowCountdown(true);
+    setCountdownValue(COUNTDOWN_START);
+    setStatusMessage("Cuenta regresiva... respira hondo");
+    clearCountdown();
+    countdownIntervalRef.current = window.setInterval(() => {
+      setCountdownValue((prev) => {
+        if (prev === null) {
+          return null;
+        }
+        if (prev <= 1) {
+          clearCountdown();
+          setTimeout(() => {
+            setShowCountdown(false);
+            setCountdownValue(null);
+            startGameSession();
+          }, 600);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  }, [clearCountdown, ensureAudioContext, gameActive, isStarting, playerName, showCountdown, startGameSession]);
 
   const handleAnswerChange = (event: ChangeEvent<HTMLInputElement>) => {
     setUserAnswer(event.target.value);
@@ -411,18 +713,16 @@ const GameScreen: React.FC<GameScreenProps> = ({ onLogout, onBack }) => {
   };
 
   const finishGame = useCallback(async () => {
-    if (!sessionId) {
-      setGameActive(false);
+    if (!gameActive) {
       return;
     }
-
     setGameActive(false);
+    stopBot();
     setSaving(true);
     const durationSeconds = computeDurationSeconds();
 
     await persistGameState(score, correctAnswers, totalQuestions, durationSeconds);
 
-    // Actualizar high score en el backend si el usuario está logueado
     if (currentUser && score > currentUser.highScore) {
       await authService.updateHighScore(currentUser.id, score);
     }
@@ -430,11 +730,27 @@ const GameScreen: React.FC<GameScreenProps> = ({ onLogout, onBack }) => {
     startTimestampRef.current = null;
     setSaving(false);
     setSessionId(null);
-    setStatusMessage("Partida sincronizada. ¡Puedes iniciar otra!");
-    setTimeout(() => {
-      startGame();
-    }, 1200);
-  }, [computeDurationSeconds, correctAnswers, persistGameState, score, sessionId, startGame, totalQuestions]);
+    const performance = getPerformanceLevel(correctAnswers);
+    setSummaryStats({ correct: correctAnswers, total: totalQuestions, score, botScore });
+    setSummaryLabel(performance.label);
+    setSummaryDescription(performance.description);
+    setSummaryVisible(true);
+    setStatusMessage("Partida finalizada. Mira tu resumen ✨");
+    launchConfetti();
+  }, [
+    authService,
+    botScore,
+    computeDurationSeconds,
+    correctAnswers,
+    currentUser,
+    gameActive,
+    getPerformanceLevel,
+    launchConfetti,
+    persistGameState,
+    score,
+    stopBot,
+    totalQuestions,
+  ]);
 
   useEffect(() => {
     if (!gameActive) {
@@ -472,6 +788,7 @@ const GameScreen: React.FC<GameScreenProps> = ({ onLogout, onBack }) => {
   return (
     <div className="game-screen">
       <Background level={difficulty} />
+      <CountdownOverlay value={countdownValue} visible={showCountdown} />
 
       <div className="game-container">
         {/* Left Column: Game Panel */}
@@ -572,18 +889,22 @@ const GameScreen: React.FC<GameScreenProps> = ({ onLogout, onBack }) => {
                 </Button>
                 <Button
                   onClick={finishGame}
-                  disabled={isStarting || saving}
+                  disabled={!gameActive || saving}
                   className="secondary"
                 >
-                  ⏹ Terminar partida
+                  🏁 Fin
                 </Button>
               </div>
               <Button
-                onClick={startGame}
-                disabled={gameActive || isStarting}
+                onClick={handleStartRequest}
+                disabled={gameActive || isStarting || showCountdown}
                 className="ghost"
               >
-                {isStarting ? "⏳ Preparando partida..." : "🎮 Nueva partida"}
+                {showCountdown
+                  ? "Cuenta regresiva..."
+                  : isStarting
+                  ? "⏳ Preparando partida..."
+                  : "🎬 Iniciar partida"}
               </Button>
             </motion.div>
 
@@ -626,6 +947,20 @@ const GameScreen: React.FC<GameScreenProps> = ({ onLogout, onBack }) => {
                 </motion.p>
               )}
             </div>
+            <GameSummaryCard
+              visible={summaryVisible}
+              correctAnswers={summaryStats.correct}
+              totalQuestions={summaryStats.total}
+              score={summaryStats.score}
+              botScore={summaryStats.botScore}
+              performanceLabel={summaryLabel}
+              performanceDescription={summaryDescription}
+              onClose={() => setSummaryVisible(false)}
+              onPlayAgain={() => {
+                setSummaryVisible(false);
+                handleStartRequest();
+              }}
+            />
           </Card>
         </motion.div>
         </div>
@@ -710,9 +1045,24 @@ const GameScreen: React.FC<GameScreenProps> = ({ onLogout, onBack }) => {
                 <span>⏱️ Tiempo restante</span>
                 <strong>{timeRemaining}s</strong>
               </motion.div>
+              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                <span>🤖 Puntaje bot</span>
+                <strong>{botScore}</strong>
+              </motion.div>
             </div>
           </Card>
         </motion.div>
+        </div>
+
+        <div className="chatbot-container">
+          <ChatbotBubble
+            message={botMessage}
+            botScore={botScore}
+            botSolved={botSolved}
+            playerScore={score}
+            isActive={botActive && gameActive}
+            mood={botMood}
+          />
         </div>
 
         <div className="history-container">
