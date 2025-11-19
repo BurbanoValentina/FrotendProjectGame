@@ -32,7 +32,7 @@ const Timer: React.FC<TimerProps> = ({ timeRemaining }) => {
         initial={{ scale: 1.2, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ duration: 0.3 }}
-        style={{ color: isLowTime ? '#ff6b6b' : 'white' }}
+        style={{ color: isLowTime ? 'white' : 'white' }}
       >
         {timeRemaining}s
       </motion.span>
