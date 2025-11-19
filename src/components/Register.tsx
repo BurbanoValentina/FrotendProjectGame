@@ -199,7 +199,7 @@ const Register: React.FC<RegisterProps> = ({ onRegisterSuccess, onSwitchToLogin 
 
           {error && (
             <motion.div
-              className="error-message"
+              className="error-message text-gray-200"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
             >
