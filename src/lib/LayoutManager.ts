@@ -1,11 +1,3 @@
-/**
- * LayoutManager - Estructura de datos basada en Array para gestionar
- * el orden y configuración de paneles en el layout del juego
- * 
- * Utiliza un Array de objetos para mantener la configuración y orden
- * de los paneles en la interfaz de usuario.
- */
-
 export interface PanelConfig {
   id: string;
   name: string;
@@ -24,10 +16,7 @@ export class LayoutManager {
     this.sortPanels();
   }
 
-  /**
-   * Ordena los paneles según su propiedad 'order'
-   * Complejidad: O(n log n)
-   */
+
   private sortPanels(): void {
     this.panels.sort((a, b) => a.order - b.order);
   }
@@ -95,16 +84,10 @@ export class LayoutManager {
     return this.updatePanel(panelId, { visible });
   }
 
-  /**
-   * Obtiene todos los paneles visibles ordenados
-   */
   getVisiblePanels(): PanelConfig[] {
     return this.panels.filter(p => p.visible);
   }
 
-  /**
-   * Obtiene todos los paneles
-   */
   getAllPanels(): PanelConfig[] {
     return [...this.panels];
   }
@@ -141,24 +124,15 @@ export class LayoutManager {
     return false;
   }
 
-  /**
-   * Restablece el layout a la configuración por defecto
-   */
   reset(defaultPanels: PanelConfig[]): void {
     this.panels = [...defaultPanels];
     this.sortPanels();
   }
 
-  /**
-   * Obtiene el número total de paneles
-   */
   size(): number {
     return this.panels.length;
   }
 
-  /**
-   * Cuenta cuántos paneles están visibles
-   */
   countVisible(): number {
     return this.panels.filter(p => p.visible).length;
   }
@@ -171,16 +145,10 @@ export class LayoutManager {
     return this.panels.some(p => p.id === panelId);
   }
 
-  /**
-   * Exporta la configuración actual como JSON
-   */
   toJSON(): PanelConfig[] {
     return this.getAllPanels();
   }
 
-  /**
-   * Carga configuración desde JSON
-   */
   fromJSON(json: PanelConfig[]): void {
     this.panels = json.map(p => ({ ...p }));
     this.sortPanels();
