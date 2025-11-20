@@ -554,7 +554,11 @@ const MultiplayerScreen: React.FC<MultiplayerScreenProps> = ({
                   exit={{ x: -100, opacity: 0 }}
                 >
                   <h2 className="question-text">{roomInfo?.currentQuestion?.prompt}</h2>
-                  <p className="answer-hint">Responde solo números (máximo 3 dígitos).</p>
+                  <div className="question-guidelines">
+                    <span className="guideline-chip">Solo números</span>
+                    <span className="guideline-chip">Máximo 3 dígitos</span>
+                    <span className="guideline-chip">15 preguntas rápidas</span>
+                  </div>
                   <Input
                     type="text"
                     value={currentAnswer}
@@ -578,12 +582,20 @@ const MultiplayerScreen: React.FC<MultiplayerScreenProps> = ({
             <div className="live-scoreboard">
               <h3 className="scoreboard-title">Marcador en Vivo</h3>
               {getSortedPlayers().map((player, index) => (
-                <div key={player.id} className={`score-item ${player.username === playerName ? 'current-player' : ''}`}>
-                  <span className="rank">#{index + 1}</span>
-                  <span className="player-info">
-                    {player.isBot ? '🤖' : '👤'} {player.username}
-                  </span>
-                  <span className="score">{player.score} pts</span>
+                <div
+                  key={player.id}
+                  className={`score-item rank-${index + 1} ${player.username === playerName ? 'current-player' : ''}`}
+                >
+                  <span className="rank-badge">#{index + 1}</span>
+                  <div className="player-score-info">
+                    <span className="player-info">
+                      {player.isBot ? '🤖' : '👤'} {player.username}
+                    </span>
+                    <span className="player-meta">
+                      {player.answeredCount || 0}/{roomInfo?.totalQuestions || TOTAL_QUESTIONS} respondidas
+                    </span>
+                  </div>
+                  <span className="score-chip">{player.score} pts</span>
                 </div>
               ))}
             </div>
