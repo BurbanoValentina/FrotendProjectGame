@@ -2,12 +2,20 @@ import React, { useState, useEffect } from "react";
 import WelcomeScreen from "./components/WelcomeScreen";
 import Login from "./components/Login";
 import Register from "./components/Register";
+import ForgotPassword from "./components/ForgotPassword";
 import GameModeSelection from "./components/GameModeSelection";
 import GameScreen from "./components/GameScreen";
 import MultiplayerScreen from "./components/MultiplayerScreen";
 import AuthService from "./services/AuthService";
 
-type AppView = 'welcome' | 'login' | 'register' | 'gameMode' | 'chatbotGame' | 'multiplayer';
+type AppView =
+  | 'welcome'
+  | 'login'
+  | 'register'
+  | 'forgotPassword'
+  | 'gameMode'
+  | 'chatbotGame'
+  | 'multiplayer';
 
 const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<AppView>('welcome');
@@ -63,6 +71,10 @@ const App: React.FC = () => {
     setCurrentView('gameMode');
   };
 
+  const handleForgotPassword = () => {
+    setCurrentView('forgotPassword');
+  };
+
   const handleLogout = () => {
     authService.logout();
     setCurrentView('login');
@@ -82,9 +94,16 @@ const App: React.FC = () => {
         <Login
           onLoginSuccess={handleLoginSuccess}
           onSwitchToRegister={() => setCurrentView('register')}
+          onForgotPassword={handleForgotPassword}
         />
       )}
       
+      {currentView === 'forgotPassword' && (
+        <ForgotPassword
+          onBackToLogin={() => setCurrentView('login')}
+        />
+      )}
+
       {currentView === 'register' && (
         <Register
           onRegisterSuccess={handleRegisterSuccess}

@@ -90,6 +90,10 @@
   max-width: 500px;
 }
 
+.recovery-card {
+  max-width: 520px;
+}
+
 @keyframes slideUp {
   from {
     transform: translateY(50px);
@@ -297,6 +301,108 @@
 .forgot-password-button:hover {
   color: #764ba2;
   text-decoration: underline;
+}
+
+.channel-selector {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.channel-pill {
+  border: 1px solid rgba(102, 126, 234, 0.3);
+  border-radius: 16px;
+  padding: 12px 16px;
+  text-align: left;
+  background: #f8f9ff;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  color: #2c3e50;
+}
+
+.channel-pill.active {
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.15), rgba(118, 75, 162, 0.2));
+  border-color: #667eea;
+  box-shadow: 0 12px 25px rgba(102, 126, 234, 0.2);
+}
+
+.channel-pill span {
+  font-size: 0.85rem;
+  color: #6b7280;
+}
+
+.recovery-feedback {
+  border-radius: 14px;
+  padding: 12px 15px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.recovery-feedback.success {
+  background: rgba(46, 213, 115, 0.15);
+  color: #0a7c4a;
+  border: 1px solid rgba(46, 213, 115, 0.4);
+}
+
+.recovery-feedback.error {
+  background: rgba(255, 99, 71, 0.15);
+  color: #c0392b;
+  border: 1px solid rgba(255, 99, 71, 0.3);
+}
+
+.ghost-link {
+  margin-top: 10px;
+  background: none;
+  border: none;
+  color: #666;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.ghost-link:hover {
+  color: #000;
+}
+
+.recovery-steps {
+  margin-top: 25px;
+  border-top: 1px solid rgba(0, 0, 0, 0.05);
+  padding-top: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.recovery-step {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.step-index {
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: white;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-weight: 700;
+}
+
+.recovery-step h4 {
+  margin: 0;
+  font-size: 1rem;
+  color: #2c3e50;
+}
+
+.recovery-step p {
+  margin: 2px 0 0;
+  font-size: 0.85rem;
+  color: #6b7280;
 }
 
 /* Responsive */

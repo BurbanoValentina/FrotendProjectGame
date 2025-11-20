@@ -13,6 +13,12 @@ export interface AuthResponse {
   user?: User;
 }
 
+export interface PasswordResetResponse {
+  success: boolean;
+  message: string;
+  ticketId?: string;
+}
+
 // Singleton Pattern para AuthService
 class AuthService {
   private static instance: AuthService;
@@ -97,6 +103,36 @@ class AuthService {
       return {
         success: false,
         message: 'Error de conexión con el servidor',
+      };
+    }
+  }
+
+  async requestPasswordReset(identifier: string, channel: 'email' | 'code'): Promise<PasswordResetResponse> {
+    try {
+      const payload = {
+        identifier,
+        channel,
+      };
+
+      const response = await fetch(`${this.API_URL}/password/recover`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Request failed with status ${response.status}`);
+      }
+
+      const data: PasswordResetResponse = await response.json();
+      return data;
+    } catch (error) {
+      return {
+        success: false,
+        message:
+          'No pudimos contactar al servidor. Intenta nuevamente en unos segundos o escribe a soporte@gamechallenge.com',
       };
     }
   }

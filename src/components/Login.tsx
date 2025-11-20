@@ -6,21 +6,16 @@ import '../styles/Auth.css';
 interface LoginProps {
   onLoginSuccess: () => void;
   onSwitchToRegister: () => void;
+  onForgotPassword: () => void;
 }
 
-const Login: React.FC<LoginProps> = ({ onLoginSuccess, onSwitchToRegister }) => {
+const Login: React.FC<LoginProps> = ({ onLoginSuccess, onSwitchToRegister, onForgotPassword }) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
   const authService = AuthService.getInstance();
-  const handleForgotPassword = () => {
-    const supportEmail = 'soporte@gamechallenge.com';
-    if (typeof window !== 'undefined') {
-      window.open(`mailto:${supportEmail}?subject=Recuperar%20contraseña`, '_blank');
-    }
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -141,7 +136,7 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess, onSwitchToRegister }) => 
           <motion.button
             type="button"
             className="forgot-password-button"
-            onClick={handleForgotPassword}
+            onClick={onForgotPassword}
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.5 }}
