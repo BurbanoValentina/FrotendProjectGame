@@ -11,23 +11,42 @@ type AppView = 'welcome' | 'login' | 'register' | 'gameMode' | 'chatbotGame' | '
 
 const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<AppView>('welcome');
+  const [deepLinkRoomCode, setDeepLinkRoomCode] = useState<string | null>(null);
   const authService = AuthService.getInstance();
 
   useEffect(() => {
     // Verificar si hay una sesión activa
-    if (authService.isAuthenticated()) {
-      setCurrentView('gameMode');
+    const hasSession = authService.isAuthenticated();
+    setCurrentView(hasSession ? 'gameMode' : 'welcome');
+
+    const params = new URLSearchParams(window.location.search);
+    const qrRoomCode = params.get('roomCode');
+
+    if (qrRoomCode) {
+      const normalizedCode = qrRoomCode.toUpperCase();
+      setDeepLinkRoomCode(normalizedCode);
+      setCurrentView(hasSession ? 'multiplayer' : 'login');
     }
   }, []);
 
+  const consumeDeepLinkRoomCode = () => {
+    setDeepLinkRoomCode(null);
+    if (window.location.search) {
+      const url = new URL(window.location.href);
+      url.searchParams.delete('roomCode');
+      url.searchParams.delete('autoJoin');
+      window.history.replaceState({}, '', url.toString());
+    }
+  };
+
   const handleLoginSuccess = () => {
     authService.pushNavigation('gameMode');
-    setCurrentView('gameMode');
+    setCurrentView(deepLinkRoomCode ? 'multiplayer' : 'gameMode');
   };
 
   const handleRegisterSuccess = () => {
     authService.pushNavigation('gameMode');
-    setCurrentView('gameMode');
+    setCurrentView(deepLinkRoomCode ? 'multiplayer' : 'gameMode');
   };
 
   const handleSelectChatbot = () => {
@@ -89,6 +108,8 @@ const App: React.FC = () => {
         <MultiplayerScreen 
           onBack={handleBackToModeSelection}
           playerName={getCurrentUser()?.nickname || getCurrentUser()?.username || 'Jugador'}
+          initialRoomCode={deepLinkRoomCode}
+          onRoomCodeConsumed={consumeDeepLinkRoomCode}
         />
       )}
     </div>

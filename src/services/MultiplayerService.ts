@@ -23,6 +23,12 @@ export interface MultiplayerRoom {
   currentQuestionIndex: number;
   status: 'WAITING' | 'PLAYING' | 'FINISHED';
   hostPlayerId: string;
+  maxPlayers?: number;
+  metadata?: {
+    questionTimeLimit?: number;
+    roundDuration?: number;
+    aiHostAlias?: string;
+  };
 }
 
 export interface CreateRoomResponse {

@@ -55,6 +55,23 @@
   margin: 0 auto;
 }
 
+.error-banner {
+  margin: 15px auto 0;
+  padding: 12px 18px;
+  border-radius: 12px;
+  background: rgba(255, 99, 71, 0.1);
+  color: #c0392b;
+  font-weight: 600;
+  text-align: center;
+}
+
+.auto-join-message {
+  text-align: center;
+  margin-bottom: 10px;
+  color: #667eea;
+  font-weight: 600;
+}
+
 .menu-button {
   display: flex;
   align-items: center;
@@ -136,6 +153,21 @@
   gap: 30px;
 }
 
+.ai-host-banner {
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 18px;
+  padding: 15px 20px;
+  margin-bottom: 25px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ai-host-banner strong {
+  color: #5f27cd;
+}
+
 .room-code-display {
   text-align: center;
 }
@@ -169,6 +201,34 @@
   margin-top: 10px;
   font-size: 0.9rem;
   color: #666;
+}
+
+.qr-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 15px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.qr-link a {
+  color: #5f27cd;
+  font-weight: 600;
+}
+
+.qr-link button {
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: none;
+  background: #5f27cd;
+  color: white;
+  cursor: pointer;
+}
+
+.copied-hint {
+  font-size: 0.85rem;
+  color: #27ae60;
 }
 
 .players-list {
@@ -260,12 +320,61 @@
   color: #2c3e50;
 }
 
+.header-timers {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.round-timer {
+  display: flex;
+  flex-direction: column;
+  text-align: right;
+  font-weight: 700;
+  color: #2c3e50;
+}
+
+.question-progress {
+  width: 220px;
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(102, 126, 234, 0.1);
+  overflow: hidden;
+  margin-top: 10px;
+}
+
+.question-progress-bar {
+  height: 100%;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+}
+
+.game-layout {
+  display: grid;
+  grid-template-columns: 1.2fr 0.8fr;
+  gap: 30px;
+}
+
+.question-zone {
+  min-height: 360px;
+}
+
+.sidebar-widgets {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
 .question-display {
   text-align: center;
   padding: 40px;
   background: white;
   border-radius: 20px;
   margin-bottom: 30px;
+}
+
+.answer-hint {
+  color: #7f8c8d;
+  margin-bottom: 15px;
 }
 
 .question-text {
@@ -318,6 +427,7 @@
   background: white;
   padding: 20px;
   border-radius: 15px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
 }
 
 .scoreboard-title {
@@ -364,6 +474,72 @@
   font-size: 1.2rem;
   font-weight: 700;
   color: #2c3e50;
+}
+
+.ai-chat-panel {
+  background: white;
+  border-radius: 15px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+  height: 100%;
+}
+
+.ai-chat-header {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 15px;
+  gap: 2px;
+  color: #2c3e50;
+}
+
+.ai-chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-right: 4px;
+}
+
+.chat-message {
+  display: flex;
+  flex-direction: column;
+  padding: 12px 14px;
+  border-radius: 12px;
+  font-size: 0.95rem;
+}
+
+.chat-message.ai {
+  background: rgba(102, 126, 234, 0.15);
+  align-self: flex-start;
+}
+
+.chat-message.player {
+  background: rgba(46, 204, 113, 0.15);
+  align-self: flex-end;
+}
+
+.chat-time {
+  font-size: 0.75rem;
+  color: #7f8c8d;
+  margin-top: 4px;
+}
+
+.chat-typing {
+  font-style: italic;
+  color: #7f8c8d;
+}
+
+.ai-chat-input {
+  display: flex;
+  gap: 10px;
+  margin-top: 15px;
+}
+
+.ai-chat-input .input {
+  flex: 1;
 }
 
 /* Results Styles */
@@ -492,6 +668,29 @@
 
   .question-text {
     font-size: 2rem;
+  }
+
+  .game-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .header-timers {
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 8px;
+  }
+
+  .ai-chat-panel,
+  .live-scoreboard {
+    width: 100%;
+  }
+
+  .ai-chat-input {
+    flex-direction: column;
+  }
+
+  .ai-chat-input .button {
+    width: 100%;
   }
 
   .player-stats {

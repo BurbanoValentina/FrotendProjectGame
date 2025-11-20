@@ -1,23 +1,19 @@
 import React from "react";
 
-interface InputProps {
+type NativeInputProps = Omit<React.InputHTMLAttributes<HTMLInputElement>, "value" | "onChange">;
+
+interface InputProps extends NativeInputProps {
   value: string;
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  placeholder?: string;
-  type?: string;
-  onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void;
-  className?: string;
-  disabled?: boolean;
 }
 
 const Input: React.FC<InputProps> = ({
   value,
   onChange,
-  placeholder,
   type = "text",
-  onKeyDown,
   className,
   disabled = false,
+  ...rest
 }) => {
   return (
     <input
@@ -25,9 +21,8 @@ const Input: React.FC<InputProps> = ({
       type={type}
       value={value}
       onChange={onChange}
-      placeholder={placeholder}
-      onKeyDown={onKeyDown}
       disabled={disabled}
+      {...rest}
     />
   );
 };
