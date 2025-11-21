@@ -569,7 +569,7 @@ const MultiplayerScreen: React.FC<MultiplayerScreenProps> = ({
   const renderGame = () => (
     <div className="multiplayer-game">
       <Background level="expert" />
-      <motion.div className="game-container" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+      <motion.div className="game-containerm" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
         <div className="game-header">
           <div className="question-counter">
             <p>

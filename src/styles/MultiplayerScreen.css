@@ -17,7 +17,7 @@
 .menu-container,
 .join-container,
 .lobby-container,
-.game-container,
+.game-containerm,
 .results-container {
   display: block;
   position: relative;
@@ -860,7 +860,7 @@
   .menu-container,
   .join-container,
   .lobby-container,
-  .game-container,
+  .game-containerm,
   .results-container {
     padding: 30px 20px;
   }
