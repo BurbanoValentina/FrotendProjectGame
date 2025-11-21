@@ -16,7 +16,7 @@ export class Graph {
 
   print(): void {
     this.adjacencyList.forEach((edges, vertex) => {
-      console.log(`${vertex} -> ${edges.join(', ')}`);
+      console.warn('[Graph DEBUG]', `${vertex} -> ${edges.join(', ')}`);
     });
   }
 }

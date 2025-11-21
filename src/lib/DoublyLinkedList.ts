@@ -66,7 +66,7 @@ export class DoublyLinkedList<T> {
   print(): void {
     let current: DoublyNode<T> | null = this.head;
     while (current !== null) {
-      console.log(current.value);
+      console.warn('[DoublyLinkedList DEBUG]', current.value);
       current = current.next as DoublyNode<T> | null;
     }
   }

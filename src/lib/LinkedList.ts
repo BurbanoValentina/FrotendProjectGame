@@ -42,7 +42,7 @@ export class LinkedList<T> {
   print(): void {
     let current = this.head;
     while (current) {
-      console.log(current.value);
+      console.warn('[LinkedList DEBUG]', current.value);
       current = current.next;
     }
   }

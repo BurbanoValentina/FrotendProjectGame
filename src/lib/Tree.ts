@@ -49,7 +49,7 @@ export class Tree<T> {
   private inOrder(node: TreeNode<T> | null): void {
     if (node) {
       this.inOrder(node.left);
-      console.log(node.value);
+      console.warn('[Tree DEBUG]', node.value);
       this.inOrder(node.right);
     }
   }

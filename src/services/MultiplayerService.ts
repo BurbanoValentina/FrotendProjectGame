@@ -151,15 +151,16 @@ class MultiplayerService {
   }
 
   /**
-   * Iniciar el juego en una sala
+   * Iniciar el juego en una sala (solo el host puede iniciar)
    */
-  async startGame(roomCode: string): Promise<StartGameResponse> {
+  async startGame(roomCode: string, playerId: string): Promise<StartGameResponse> {
     try {
       const response = await fetch(`${this.API_URL}/rooms/${roomCode}/start`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
+        body: JSON.stringify({ playerId }),
       });
 
       const data: StartGameResponse = await response.json();

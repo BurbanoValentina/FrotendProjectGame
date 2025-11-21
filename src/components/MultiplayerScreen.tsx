@@ -182,7 +182,7 @@ const MultiplayerScreen: React.FC<MultiplayerScreenProps> = ({
     if (!roomCode) return;
     setError(null);
 
-    const response = await multiplayerService.startGame(roomCode);
+    const response = await multiplayerService.startGame(roomCode, playerId);
 
     if (response.success && response.room) {
       const hydrated = hydrateRoomInfo(response.room);
@@ -196,7 +196,7 @@ const MultiplayerScreen: React.FC<MultiplayerScreenProps> = ({
     } else {
       setError(response.message || 'Error al iniciar el juego');
     }
-  }, [hydrateRoomInfo, multiplayerService, roomCode]);
+  }, [hydrateRoomInfo, multiplayerService, playerId, roomCode]);
 
   const handleSubmitAnswer = useCallback(async () => {
     if (isAnswerLocked || !roomInfo || !roomInfo.currentQuestion || !roomCode) {
@@ -442,72 +442,125 @@ const MultiplayerScreen: React.FC<MultiplayerScreenProps> = ({
     </div>
   );
 
+  const isHost = roomInfo?.players[0]?.id === playerId;
+
   const renderLobby = () => (
     <div className="multiplayer-lobby">
       <Background level="advanced" />
       <motion.div className="lobby-container" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-        <h2 className="lobby-title">Sala sincronizada</h2>
+        <h2 className="lobby-title">🎮 Sala Multijugador</h2>
         <ErrorBanner />
-        <div className="ai-host-banner">
-          <p>
-            <strong>{roomInfo?.aiHostName}</strong> ya configuró {roomInfo?.totalQuestions || TOTAL_QUESTIONS} preguntas. Capacidad:
-            {' '}
-            {roomInfo?.maxPlayers || MAX_PLAYERS} jugadores.
-          </p>
-          <span>{aiStatus}</span>
-        </div>
-        <div className="room-info">
-          <div className="room-code-display">
-            <p className="code-label">Código de Sala:</p>
-            <p className="code-value">{roomInfo?.roomCode}</p>
-            <div className="qr-link">
+        
+        <div className="lobby-content">
+          <div className="lobby-left-section">
+            <div className="room-code-section">
+              <p className="code-label">Código de Sala</p>
+              <div className="code-display-box">
+                <p className="code-value">{roomInfo?.roomCode}</p>
+                <button type="button" onClick={handleCopyLink} className="copy-code-btn">
+                  {linkCopied ? '✓ Copiado' : '📋 Copiar'}
+                </button>
+              </div>
               {roomInfo?.roomCode && (
-                <a href={buildJoinLink(roomInfo.roomCode)} target="_blank" rel="noreferrer">
-                  Abrir enlace directo
+                <a 
+                  href={buildJoinLink(roomInfo.roomCode)} 
+                  target="_blank" 
+                  rel="noreferrer"
+                  className="share-link"
+                >
+                  🔗 Compartir enlace directo
                 </a>
               )}
-              <button type="button" onClick={handleCopyLink}>
-                Copiar
-              </button>
-              {linkCopied && <span className="copied-hint">¡Copiado!</span>}
+            </div>
+
+            <div className="qr-section">
+              {roomInfo?.roomCode && (
+                <>
+                  <img
+                    src={generateQrCode(buildJoinLink(roomInfo.roomCode))}
+                    alt="QR Code"
+                    className="qr-image"
+                  />
+                  <p className="qr-label">Escanea para unirte</p>
+                </>
+              )}
+            </div>
+
+            <div className="room-info-section">
+              <div className="info-card">
+                <span className="info-icon">👥</span>
+                <div className="info-content">
+                  <p className="info-label">Jugadores</p>
+                  <p className="info-value">{roomInfo?.players.length || 0}/{roomInfo?.maxPlayers || MAX_PLAYERS}</p>
+                </div>
+              </div>
+              <div className="info-card">
+                <span className="info-icon">❓</span>
+                <div className="info-content">
+                  <p className="info-label">Preguntas</p>
+                  <p className="info-value">{roomInfo?.totalQuestions || TOTAL_QUESTIONS}</p>
+                </div>
+              </div>
+              <div className="info-card">
+                <span className="info-icon">⏱️</span>
+                <div className="info-content">
+                  <p className="info-label">Tiempo por pregunta</p>
+                  <p className="info-value">{roomInfo?.questionTimeLimit || QUESTION_TIME_LIMIT}s</p>
+                </div>
+              </div>
             </div>
           </div>
-          <div className="qr-code">
-            {roomInfo?.roomCode && (
-              <>
-                <img
-                  src={generateQrCode(buildJoinLink(roomInfo.roomCode))}
-                  alt="QR Code"
-                  className="qr-image"
-                />
-                <p className="qr-label">Escanea para unirte automáticamente</p>
-              </>
-            )}
+
+          <div className="lobby-right-section">
+            <div className="players-list">
+              <h3 className="players-title">
+                <span className="title-icon">👥</span>
+                Jugadores Conectados
+              </h3>
+              <div className="players-container">
+                {getSortedPlayers().map((player, index) => (
+                  <motion.div
+                    key={player.id}
+                    className={`player-card-lobby ${player.id === playerId ? 'is-you' : ''}`}
+                    initial={{ x: 50, opacity: 0 }}
+                    animate={{ x: 0, opacity: 1 }}
+                    transition={{ delay: index * 0.1 }}
+                  >
+                    <div className="player-avatar-lobby">
+                      {player.isBot ? '🤖' : '👤'}
+                    </div>
+                    <div className="player-info-lobby">
+                      <span className="player-name-lobby">
+                        {player.username}
+                        {player.id === playerId && ' (Tú)'}
+                      </span>
+                      {index === 0 && <span className="host-badge-lobby">👑 Admin</span>}
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            </div>
+
+            <div className="lobby-actions">
+              {isHost ? (
+                <Button
+                  onClick={handleStartGame}
+                  className="start-game-button"
+                  disabled={(roomInfo?.players.length || 0) < 2}
+                >
+                  🚀 Iniciar Partida
+                </Button>
+              ) : (
+                <div className="waiting-host-message">
+                  <span className="waiting-icon">⏳</span>
+                  <p>Esperando a que el admin inicie la partida...</p>
+                </div>
+              )}
+              <Button onClick={() => setView('menu')} className="leave-button">
+                ⬅️ Salir
+              </Button>
+            </div>
           </div>
-        </div>
-        <div className="players-list">
-          <h3 className="players-title">
-            Jugadores ({roomInfo?.players.length || 0}/{roomInfo?.maxPlayers || MAX_PLAYERS})
-          </h3>
-          {getSortedPlayers().map((player, index) => (
-            <Card key={player.id} className="player-card">
-              <span className="player-icon">{player.isBot ? '🤖' : '👤'}</span>
-              <span className="player-name">{player.username}</span>
-              {index === 0 && <span className="host-badge">Host</span>}
-            </Card>
-          ))}
-        </div>
-        <div className="lobby-actions">
-          <Button
-            onClick={handleStartGame}
-            className="start-game-button"
-            disabled={(roomInfo?.players.length || 0) < 2}
-          >
-            Iniciar ronda cronometrada
-          </Button>
-          <Button onClick={() => setView('menu')} className="leave-button">
-            Salir
-          </Button>
         </div>
       </motion.div>
     </div>

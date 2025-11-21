@@ -94,7 +94,7 @@ export class CircularDoublyLinkedList<T> {
 
     let current = this.head;
     do {
-      console.log(current.value);
+      console.warn('[CircularDoublyLinkedList DEBUG]', current.value);
       current = current.next!;
     } while (current !== this.head);
   }
