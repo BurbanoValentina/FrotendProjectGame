@@ -1,5 +1,7 @@
 import { Queue } from '../lib/Queue';
 
+const API_BASE_URL = import.meta.env.VITE_API_URL ?? 'https://web-k1y5lmjwwpdm.up-de-fra1-k8s-1.apps.run-on-seenode.com';
+
 export interface MultiplayerPlayer {
   id: string;
   username: string;
@@ -71,7 +73,7 @@ export interface RankingResponse {
  */
 class MultiplayerService {
   private static instance: MultiplayerService;
-  private readonly API_URL = 'https://web-k1y5lmjwwpdm.up-de-fra1-k8s-1.apps.run-on-seenode.com/api/multiplayer';
+  private readonly API_URL = `${API_BASE_URL}/api/multiplayer`;
   
   // Cola para gestionar las solicitudes
   private requestQueue: Queue<Promise<any>>;
@@ -103,7 +105,7 @@ class MultiplayerService {
       const data: CreateRoomResponse = await response.json();
       
       if (!data.success) {
-        throw new Error(data.message || 'Error al crear la sala');
+        throw new Error(data.message || 'Unable to create the room');
       }
 
       return data;
@@ -113,7 +115,7 @@ class MultiplayerService {
         success: false,
         roomCode: '',
         room: {} as MultiplayerRoom,
-        message: error instanceof Error ? error.message : 'Error de conexión',
+        message: error instanceof Error ? error.message : 'Connection error',
       };
     }
   }
@@ -134,7 +136,7 @@ class MultiplayerService {
       const data: JoinRoomResponse = await response.json();
       
       if (!data.success) {
-        throw new Error(data.message || 'Error al unirse a la sala');
+        throw new Error(data.message || 'Unable to join the room');
       }
 
       return data;
@@ -143,7 +145,7 @@ class MultiplayerService {
       return {
         success: false,
         room: {} as MultiplayerRoom,
-        message: error instanceof Error ? error.message : 'Error de conexión',
+        message: error instanceof Error ? error.message : 'Connection error',
       };
     }
   }
@@ -163,7 +165,7 @@ class MultiplayerService {
       const data: StartGameResponse = await response.json();
       
       if (!data.success) {
-        throw new Error(data.message || 'Error al iniciar el juego');
+        throw new Error(data.message || 'Unable to start the game');
       }
 
       return data;
@@ -173,7 +175,7 @@ class MultiplayerService {
         success: false,
         room: {} as MultiplayerRoom,
         currentQuestion: {} as MultiplayerQuestion,
-        message: error instanceof Error ? error.message : 'Error de conexión',
+        message: error instanceof Error ? error.message : 'Connection error',
       };
     }
   }
@@ -199,7 +201,7 @@ class MultiplayerService {
       const data: SubmitAnswerResponse = await response.json();
       
       if (!data.success) {
-        throw new Error('Error al enviar la respuesta');
+        throw new Error('Unable to submit the answer');
       }
 
       return data;
@@ -210,7 +212,7 @@ class MultiplayerService {
         room: {} as MultiplayerRoom,
         currentQuestion: null,
         isFinished: false,
-        message: error instanceof Error ? error.message : 'Error de conexión',
+        message: error instanceof Error ? error.message : 'Connection error',
       };
     }
   }
@@ -233,7 +235,7 @@ class MultiplayerService {
       console.error('Error getting room:', error);
       return {
         success: false,
-        message: 'Error de conexión',
+        message: 'Connection error',
       };
     }
   }
@@ -279,7 +281,7 @@ class MultiplayerService {
       console.error('Error leaving room:', error);
       return {
         success: false,
-        message: 'Error de conexión',
+        message: 'Connection error',
       };
     }
   }

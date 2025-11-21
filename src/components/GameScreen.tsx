@@ -33,7 +33,7 @@ type Question = {
 };
 
 type GameResult = {
-  id: number;
+  id: string;
   playerName: string;
   difficulty: Difficulty;
   score: number;
@@ -174,7 +174,7 @@ const GameScreen: React.FC<GameScreenProps> = ({ onLogout, onBack }) => {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [sessionId, setSessionId] = useState<number | null>(null);
+  const [sessionId, setSessionId] = useState<string | null>(null);
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [bestScore, setBestScore] = useState(0);
   const [streak, setStreak] = useState(0);
@@ -268,10 +268,12 @@ const GameScreen: React.FC<GameScreenProps> = ({ onLogout, onBack }) => {
   const startTimestampRef = useRef<number | null>(null);
   const historyStack = useRef(new Stack<HistoryEntry>());
 
+  const sanitizeAnswerInput = useCallback((value: string) => value.replace(/\D/g, '').slice(0, 3), []);
+
   const fetchGames = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await fetch(`${apiUrl}/games`);
+      const response = await fetch(`${apiUrl}/api/games`);
       if (!response.ok) {
         throw new Error(`Request failed with status ${response.status}`);
       }
@@ -536,7 +538,7 @@ const GameScreen: React.FC<GameScreenProps> = ({ onLogout, onBack }) => {
         return;
       }
       try {
-        const response = await fetch(`${apiUrl}/games/${sessionId}`, {
+        const response = await fetch(`${apiUrl}/api/games/${sessionId}`, {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
@@ -572,7 +574,7 @@ const GameScreen: React.FC<GameScreenProps> = ({ onLogout, onBack }) => {
     setError(null);
     setStatusMessage(null);
     try {
-      const response = await fetch(`${apiUrl}/games/start`, {
+      const response = await fetch(`${apiUrl}/api/games/start`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -641,7 +643,7 @@ const GameScreen: React.FC<GameScreenProps> = ({ onLogout, onBack }) => {
   }, [clearCountdown, ensureAudioContext, gameActive, isStarting, playerName, showCountdown, startGameSession]);
 
   const handleAnswerChange = (event: ChangeEvent<HTMLInputElement>) => {
-    setUserAnswer(event.target.value);
+    setUserAnswer(sanitizeAnswerInput(event.target.value));
   };
 
   const handleAnswerKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
@@ -668,7 +670,8 @@ const GameScreen: React.FC<GameScreenProps> = ({ onLogout, onBack }) => {
       return;
     }
 
-    const trimmedAnswer = userAnswer.trim();
+    const trimmedAnswer = sanitizeAnswerInput(userAnswer);
+    setUserAnswer(trimmedAnswer);
     if (!trimmedAnswer) {
       setFeedback("incorrect");
       return;
@@ -875,7 +878,10 @@ const GameScreen: React.FC<GameScreenProps> = ({ onLogout, onBack }) => {
                 value={userAnswer}
                 onChange={handleAnswerChange}
                 placeholder="Escribe tu resultado"
-                type="number"
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                maxLength={3}
                 onKeyDown={handleAnswerKeyDown}
                 className="answer-input"
               />

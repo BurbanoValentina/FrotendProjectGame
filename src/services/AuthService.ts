@@ -1,38 +1,61 @@
 import { UserHashMap, SessionQueue, NavigationStack } from '../lib/UserDataStructures';
 
+const API_BASE_URL = import.meta.env.VITE_API_URL ?? 'https://web-k1y5lmjwwpdm.up-de-fra1-k8s-1.apps.run-on-seenode.com';
+const AUTH_ENDPOINT = `${API_BASE_URL}/api/auth`;
+
 export interface User {
-  id: number;
+  id: string;
   username: string;
   nickname: string;
   highScore: number;
+}
+
+export interface SessionInfo {
+  sessionId: string;
+  token: string;
+  expiresAt: string;
 }
 
 export interface AuthResponse {
   success: boolean;
   message: string;
   user?: User;
+  session?: SessionInfo;
 }
 
-export interface PasswordResetResponse {
+export interface PasswordChangeResponse {
   success: boolean;
   message: string;
-  ticketId?: string;
+}
+
+interface StoredAuthPayload {
+  user: User;
+  session?: SessionInfo | null;
 }
 
 // Singleton Pattern para AuthService
 class AuthService {
   private static instance: AuthService;
+  private static readonly STORAGE_KEY = 'currentUser';
   private userCache: UserHashMap;
   private sessionHistory: SessionQueue<string>;
   private navigationHistory: NavigationStack<string>;
   private currentUser: User | null;
-  private readonly API_URL = 'https://web-k1y5lmjwwpdm.up-de-fra1-k8s-1.apps.run-on-seenode.com/api/auth';
+  private activeSession: SessionInfo | null;
+  private readonly authEndpoint = AUTH_ENDPOINT;
 
   private constructor() {
     this.userCache = new UserHashMap();
     this.sessionHistory = new SessionQueue<string>(20);
     this.navigationHistory = new NavigationStack<string>();
-    this.currentUser = this.loadUserFromStorage();
+
+    const storedPayload = this.loadAuthPayload();
+    this.currentUser = storedPayload?.user ?? null;
+    this.activeSession = storedPayload?.session ?? null;
+
+    if (this.currentUser?.username) {
+      this.userCache.set(this.currentUser.username, this.currentUser);
+    }
   }
 
   public static getInstance(): AuthService {
@@ -50,7 +73,7 @@ class AuthService {
         password: password.trim(),
         nickname: nickname.trim(),
       };
-      const response = await fetch(`${this.API_URL}/register`, {
+      const response = await fetch(`${this.authEndpoint}/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -61,7 +84,7 @@ class AuthService {
       const data: AuthResponse = await response.json();
 
       if (data.success && data.user) {
-        this.setCurrentUser(data.user);
+        this.setAuthenticationState(data.user, data.session ?? null);
         this.sessionHistory.enqueue(`Usuario ${username} registrado - ${new Date().toLocaleString()}`);
         this.userCache.set(username, data.user);
       }
@@ -82,7 +105,7 @@ class AuthService {
         username: username.trim(),
         password: password.trim(),
       };
-      const response = await fetch(`${this.API_URL}/login`, {
+      const response = await fetch(`${this.authEndpoint}/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -93,7 +116,7 @@ class AuthService {
       const data: AuthResponse = await response.json();
 
       if (data.success && data.user) {
-        this.setCurrentUser(data.user);
+        this.setAuthenticationState(data.user, data.session ?? null);
         this.sessionHistory.enqueue(`Usuario ${username} inició sesión - ${new Date().toLocaleString()}`);
         this.userCache.set(username, data.user);
       }
@@ -107,27 +130,28 @@ class AuthService {
     }
   }
 
-  async requestPasswordReset(identifier: string, channel: 'email' | 'code'): Promise<PasswordResetResponse> {
+  async changePassword(identifier: string, newPassword: string): Promise<PasswordChangeResponse> {
     try {
-      const payload = {
-        identifier,
-        channel,
-      };
-
-      const response = await fetch(`${this.API_URL}/password/recover`, {
-        method: 'POST',
+      const response = await fetch(`${this.authEndpoint}/password/change`, {
+        method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({ identifier, newPassword }),
       });
 
+      const message = await response.text();
       if (!response.ok) {
-        throw new Error(`Request failed with status ${response.status}`);
+        return {
+          success: false,
+          message: message || 'No pudimos actualizar la contraseña.',
+        };
       }
 
-      const data: PasswordResetResponse = await response.json();
-      return data;
+      return {
+        success: true,
+        message: message || 'Contraseña actualizada correctamente.',
+      };
     } catch (error) {
       return {
         success: false,
@@ -142,21 +166,25 @@ class AuthService {
     if (this.currentUser) {
       this.sessionHistory.enqueue(`Usuario ${this.currentUser.username} cerró sesión - ${new Date().toLocaleString()}`);
     }
-    this.currentUser = null;
-    localStorage.removeItem('currentUser');
-    this.navigationHistory.clear();
+
+    const token = this.activeSession?.token;
+    this.clearAuthenticationState();
+
+    if (token) {
+      void this.revokeRemoteSession(token);
+    }
   }
 
   // Actualizar high score
-  async updateHighScore(userId: number, score: number): Promise<boolean> {
+  async updateHighScore(userId: string, score: number): Promise<boolean> {
     try {
-      const response = await fetch(`${this.API_URL}/user/${userId}/highscore?score=${score}`, {
+      const response = await fetch(`${this.authEndpoint}/user/${userId}/highscore?score=${score}`, {
         method: 'PUT',
       });
 
       if (response.ok && this.currentUser) {
         this.currentUser.highScore = score;
-        this.saveUserToStorage();
+        this.saveAuthPayload();
         return true;
       }
       return false;
@@ -176,23 +204,55 @@ class AuthService {
 
   // Gestión de usuario actual
   getCurrentUser(): User | null {
+    this.enforceSessionTtl();
     return this.currentUser;
   }
 
-  private setCurrentUser(user: User): void {
+  private setAuthenticationState(user: User, session?: SessionInfo | null): void {
     this.currentUser = user;
-    this.saveUserToStorage();
+    this.activeSession = session ?? null;
+    this.saveAuthPayload();
   }
 
-  private saveUserToStorage(): void {
-    if (this.currentUser) {
-      localStorage.setItem('currentUser', JSON.stringify(this.currentUser));
+  private clearAuthenticationState(): void {
+    this.currentUser = null;
+    this.activeSession = null;
+    localStorage.removeItem(AuthService.STORAGE_KEY);
+    this.navigationHistory.clear();
+  }
+
+  private saveAuthPayload(): void {
+    if (!this.currentUser) {
+      this.clearAuthenticationState();
+      return;
     }
+
+    const payload: StoredAuthPayload = {
+      user: this.currentUser,
+      session: this.activeSession,
+    };
+    localStorage.setItem(AuthService.STORAGE_KEY, JSON.stringify(payload));
   }
 
-  private loadUserFromStorage(): User | null {
-    const stored = localStorage.getItem('currentUser');
-    return stored ? JSON.parse(stored) : null;
+  private loadAuthPayload(): StoredAuthPayload | null {
+    const stored = localStorage.getItem(AuthService.STORAGE_KEY);
+    if (!stored) {
+      return null;
+    }
+
+    try {
+      const parsed = JSON.parse(stored) as StoredAuthPayload | User | null;
+      if (parsed && typeof parsed === 'object' && 'user' in parsed) {
+        const payload = parsed as StoredAuthPayload;
+        return {
+          user: payload.user,
+          session: payload.session ?? null,
+        };
+      }
+      return parsed ? { user: parsed as User, session: null } : null;
+    } catch (error) {
+      return null;
+    }
   }
 
   // Obtener historial de sesiones
@@ -202,12 +262,34 @@ class AuthService {
 
   // Verificar si hay usuario autenticado
   isAuthenticated(): boolean {
+    this.enforceSessionTtl();
     return this.currentUser !== null;
   }
 
   // Obtener usuario del caché
   getCachedUser(username: string): User | null {
     return this.userCache.get(username);
+  }
+
+  private enforceSessionTtl(): void {
+    if (!this.activeSession?.expiresAt) {
+      return;
+    }
+
+    const expiresAt = new Date(this.activeSession.expiresAt).getTime();
+    if (Number.isNaN(expiresAt) || Date.now() >= expiresAt) {
+      this.logout();
+    }
+  }
+
+  private async revokeRemoteSession(token: string): Promise<void> {
+    try {
+      await fetch(`${this.authEndpoint}/logout?token=${encodeURIComponent(token)}`, {
+        method: 'POST',
+      });
+    } catch (error) {
+      console.warn('Unable to notify backend about logout', error);
+    }
   }
 }
 

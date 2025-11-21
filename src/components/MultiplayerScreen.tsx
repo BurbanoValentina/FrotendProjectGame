@@ -207,9 +207,11 @@ const MultiplayerScreen: React.FC<MultiplayerScreenProps> = ({
     setCurrentAnswer(sanitized);
 
     if (!sanitized) {
+      setError('Ingresa un número de hasta 3 dígitos.');
       return;
     }
 
+    setError(null);
     const userAnswer = parseInt(sanitized, 10);
     const timeTaken = Date.now() - questionStartTime;
     const isCorrect = userAnswer === roomInfo.currentQuestion.answer;

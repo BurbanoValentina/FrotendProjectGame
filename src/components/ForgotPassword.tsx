@@ -7,28 +7,16 @@ interface ForgotPasswordProps {
   onBackToLogin: () => void;
 }
 
-const RECOVERY_CHANNELS = [
-  {
-    id: 'email',
-    label: 'Correo de verificación',
-    description: 'Enviaremos un enlace para restablecer tu contraseña.'
-  },
-  {
-    id: 'code',
-    label: 'Código temporal',
-    description: 'Recibirás un código de 6 dígitos para validar tu identidad.'
-  }
-];
-
 const RECOVERY_STEPS = [
-  { title: 'Confirma tus datos', detail: 'Ingresa tu usuario o correo asociado.' },
-  { title: 'Verifica tu identidad', detail: 'Revisa tu bandeja o app autenticadora.' },
-  { title: 'Crea nueva contraseña', detail: 'Usa una clave segura de 8+ caracteres.' }
+  { title: 'Identifica tu cuenta', detail: 'Ingresa tu usuario o apodo registrado.' },
+  { title: 'Crea nueva contraseña', detail: 'Debe tener entre 5 y 15 caracteres.' },
+  { title: 'Confirma el cambio', detail: 'Guarda y vuelve a iniciar sesión con la nueva contraseña.' }
 ];
 
 const ForgotPassword: React.FC<ForgotPasswordProps> = ({ onBackToLogin }) => {
   const [identifier, setIdentifier] = useState('');
-  const [channel, setChannel] = useState<'email' | 'code'>('email');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [status, setStatus] = useState<'idle' | 'sending' | 'success' | 'error'>('idle');
   const [serverMessage, setServerMessage] = useState('');
 
@@ -36,8 +24,24 @@ const ForgotPassword: React.FC<ForgotPasswordProps> = ({ onBackToLogin }) => {
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (!identifier.trim()) {
-      setServerMessage('Necesitamos tu usuario o correo para continuar.');
+    const trimmedIdentifier = identifier.trim();
+    const trimmedPassword = newPassword.trim();
+    const trimmedConfirm = confirmPassword.trim();
+
+    if (!trimmedIdentifier) {
+      setServerMessage('Necesitamos tu usuario o apodo para continuar.');
+      setStatus('error');
+      return;
+    }
+
+    if (trimmedPassword.length < 5 || trimmedPassword.length > 15) {
+      setServerMessage('La nueva contraseña debe tener entre 5 y 15 caracteres.');
+      setStatus('error');
+      return;
+    }
+
+    if (trimmedPassword !== trimmedConfirm) {
+      setServerMessage('Las contraseñas no coinciden.');
       setStatus('error');
       return;
     }
@@ -45,10 +49,15 @@ const ForgotPassword: React.FC<ForgotPasswordProps> = ({ onBackToLogin }) => {
     setStatus('sending');
     setServerMessage('');
 
-    const response = await authService.requestPasswordReset(identifier.trim(), channel);
+    const response = await authService.changePassword(trimmedIdentifier, trimmedPassword);
 
     setStatus(response.success ? 'success' : 'error');
     setServerMessage(response.message);
+
+    if (response.success) {
+      setNewPassword('');
+      setConfirmPassword('');
+    }
   };
 
   return (
@@ -65,31 +74,48 @@ const ForgotPassword: React.FC<ForgotPasswordProps> = ({ onBackToLogin }) => {
         </motion.div>
 
         <form onSubmit={handleSubmit} className="auth-form">
-          <label className="input-label">Usuario o correo</label>
+          <label className="input-label">Usuario o apodo</label>
           <div className="input-wrapper">
-            <span className="input-icon">📧</span>
+            <span className="input-icon">👤</span>
             <input
               type="text"
               className="auth-input"
-              placeholder="ej: playerPro o tu@email.com"
+              placeholder="ej: playerPro o gamerLegend"
               value={identifier}
               onChange={(e) => setIdentifier(e.target.value)}
               required
             />
           </div>
 
-          <div className="channel-selector">
-            {RECOVERY_CHANNELS.map((option) => (
-              <button
-                type="button"
-                key={option.id}
-                className={`channel-pill ${channel === option.id ? 'active' : ''}`}
-                onClick={() => setChannel(option.id as 'email' | 'code')}
-              >
-                <strong>{option.label}</strong>
-                <span>{option.description}</span>
-              </button>
-            ))}
+          <label className="input-label">Nueva contraseña</label>
+          <div className="input-wrapper">
+            <span className="input-icon">🔒</span>
+            <input
+              type="password"
+              className="auth-input"
+              placeholder="Ingresa tu nueva contraseña"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              minLength={5}
+              maxLength={15}
+              required
+            />
+          </div>
+          <span className="input-hint">5-15 caracteres, evita espacios vacíos</span>
+
+          <label className="input-label">Confirma tu contraseña</label>
+          <div className="input-wrapper">
+            <span className="input-icon">✅</span>
+            <input
+              type="password"
+              className="auth-input"
+              placeholder="Repite tu nueva contraseña"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              minLength={5}
+              maxLength={15}
+              required
+            />
           </div>
 
           {serverMessage && (
@@ -109,7 +135,7 @@ const ForgotPassword: React.FC<ForgotPasswordProps> = ({ onBackToLogin }) => {
             whileHover={{ scale: 1.03 }}
             whileTap={{ scale: 0.97 }}
           >
-            {status === 'sending' ? 'Procesando...' : 'Generar instrucciones'}
+            {status === 'sending' ? 'Procesando...' : 'Actualizar contraseña'}
           </motion.button>
 
           <button type="button" className="ghost-link" onClick={onBackToLogin}>
